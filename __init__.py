@@ -37,10 +37,10 @@ class webOSTV:
         if response == True:
             print("WS Handshake Response:", response)
         else:
-            print("ERROR during WS handshake!")
-        preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', response, matches)
-        if (matches):
-            keyAccept = trim(matches[1])
+			print("ERROR during WS handshake!")
+		preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', response, matches)
+		if (matches):
+			keyAccept = trim(matches[1])
             expectedResonse = base64_encode(pack('H*', sha1(self._ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')))
             self._connected = (keyAccept === expectedResonse) ? true : false
         else:
@@ -171,7 +171,7 @@ class webOSTV:
                 return false
         elif (payloadLength > 125):
             payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8)
-            frameHead[1] = ($masked === true) ? 254 : 126
+            frameHead[1] = (masked === true) ? 254 : 126
             frameHead[2] = bindec($payloadLengthBin[0])
             frameHead[3] = bindec($payloadLengthBin[1])
         else:
@@ -184,32 +184,32 @@ class webOSTV:
 
         if (masked === true):
             // generate a random mask:
-            mask = array()
+            mask = []
             for (i = 0 i < 4 i++):
                 mask[i] = chr(rand(0, 255))
-
             frameHead = array_merge(frameHead, mask)
         frame = implode('', frameHead)
         // append payload to frame:
         for (i = 0 i < payloadLength i++):
-            frame .= (masked === true) ? payload[i] ^ mask[i % 4] : payload[i]
+            frame += (masked === true) ? payload[i] ^ mask[i % 4] : payload[i]
         return frame
         
   def generateRandomString(length = 10, addSpaces = true, addNumbers = true)
     {  
         characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
-        useChars = array()
+        useChars = []
         // select some random chars:    
         for(i = 0 i < length i++):
             useChars[] = characters[mt_rand(0, strlen(characters)-1)]
 		
         // add spaces and numbers:
         if(addSpaces === true):
-            array_push(useChars, ' ', ' ', ' ', ' ', ' ', ' ')
+            #array_push(useChars, ' ', ' ', ' ', ' ', ' ', ' ')
+			useChars.append( ' ', ' ', ' ', ' ', ' ', ' ')
         
         if(addNumbers === true):
-            array_push(useChars, rand(0,9), rand(0,9), rand(0,9))
-        
+            #array_push(useChars, rand(0,9), rand(0,9), rand(0,9))
+			useChars.append(useChars, rand(0,9), rand(0,9), rand(0,9))
         shuffle(useChars)
         randomString = trim(implode('', useChars))
         randomString = substr(randomString, 0, length)
