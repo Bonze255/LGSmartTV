@@ -35,9 +35,12 @@ class webOSTV:
 		ws_handshake_cmd += "Sec-WebSocket-Key: "+ self._wskey + "\r\n"
 		ws_handshake_cmd += "Host: "+self._host+":"+self._port+"\r\n\r\n"
 		#self._sock = fsockopen(self._host, self._port, errn, errstr, 2)
-		self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self._sock.connect((self._host, self._port))
-		self._sock.settimeout(10000)
+		try:
+			self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self._sock.connect((self._host, self._port))
+			self._sock.settimeout(10000)
+		except:
+			print("Verbindung nicht möglich!")
 
 		print("Sending WS handshake", ws_handshake_cmd)
 		response = self.send(ws_handshake_cmd)
