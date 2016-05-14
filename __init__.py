@@ -132,7 +132,7 @@ class webOSTV:
         self._send_command(command)
         
 	def hybi10Encode(payload, type = 'text', masked = true):
-		frameHead = array()
+		frameHead = []
 		frame = ''
 		payloadLength = strlen(payload)
 
