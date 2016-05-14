@@ -65,30 +65,30 @@ class webOSTV:
             {
                 print("\nLG Handshake Response\n".json_string(response)."\n")
                 result = json_array(response)
-                if (result && array_key_exists('id',result) &&  result['id']=='result_0' && array_key_exists('client-key',$result['payload'])):
+                if (result AND array_key_exists('id',result) AND  result['id']=='result_0' AND array_key_exists('client-key',result['payload'])):
                     // LG client-key received: COMPARE!!!
                     if (self._lg_key == result['payload']['client-key']):
                         print("LG Client-Key successfully approved\n") 
-					else if ($result && array_key_exists('id',$result) &&  $result['id']=='register_0' && array_key_exists('pairingType',$result['payload']) && array_key_exists('returnValue',$result['payload'])):
+					else if (result AND array_key_exists('id',$result) AND  result['id']=='register_0' AND array_key_exists('pairingType',$result['payload']) AND array_key_exists('returnValue',$result['payload'])):
                     // LG TV is prompting for access rights
-                    if (result['payload']['pairingType'] == "PROMPT" && result['payload']['returnValue'] == "true"): 
-                        $starttime = microtime(1)
-                        $lg_key_received = false
-                        $error_received = false
+                    if (result['payload']['pairingType'] == "PROMPT" AND result['payload']['returnValue'] == "true"): 
+                        starttime = microtime(1)
+                        lg_key_received = false
+                        error_received = false
                         do {
                             response = @fread(self._sock, 8192)
                             result = json_array(response)
-                            if (result && array_key_exists('id',result) &&  result['id']=='register_0' && is_array(result['payload']) && array_key_exists('client-key',result['payload'])):
+                            if (result AND array_key_exists('id',result) AND  result['id']=='register_0' AND is_array(result['payload']) AND array_key_exists('client-key',result['payload'])):
                             
                                 lg_key_received = true
                                 self._lg_key = result['payload']['client-key']
                                 print("LG Client-Key successfully received:",self._lg_key) 
-                            elif (result && array_key_exists('id',result) &&  result['id']=='register_0' && array_key_exists('error',result)):
+                            elif (result AND array_key_exists('id',result) AND  result['id']=='register_0' AND array_key_exists('error',result)):
                                 error_received = true
                                 print("ERROR: ",result['error'])
                             usleep(200000)
                             time = microtime(1)
-                        } while (time-starttime<60 && !lg_key_received && !error_received)
+                        } while (time-starttime<60 AND !lg_key_received AND !error_received)
                     }
                 }
            else:
@@ -194,8 +194,7 @@ class webOSTV:
             frame += (masked === true) ? payload[i] ^ mask[i % 4] : payload[i]
         return frame
         
-  def generateRandomString(length = 10, addSpaces = true, addNumbers = true)
-    {  
+	def generateRandomString(length = 10, addSpaces = true, addNumbers = true)
         characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
         useChars = []
         // select some random chars:    
@@ -226,3 +225,12 @@ class webOSTV:
         len = to-from+1
         result = substr(str,from,len)
         return result 
+	def run(self):
+		tv = new webOSTV("192.168.0.200")   // Change to the IP of your LG device
+		self.connect()                     // 
+		self._lg_handshake()
+		self._message("YEAH, it works!!!")
+		sleep (5)
+		self._set_volume(75)
+		sleep(10)
+		self._disconnect()
