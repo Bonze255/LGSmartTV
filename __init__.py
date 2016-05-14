@@ -51,7 +51,7 @@ class webOSTV:
 		try:
 			keyAccept = trim(matches[1])
 			#expectedResonse = base64_encode(pack('H*', sha1(self._wskey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')))
-			##expectedResonse = base64_encode(binascii.unhexlify('H*', hashlib.sha1(self._wskey . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').hexdigest()))
+			expectedResonse = base64_encode(binascii.unhexlify(hashlib.sha1(self._wskey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').hexdigest()))
 			if keyAccept == expectedResonse:
 				self._connected = True
 			else:
