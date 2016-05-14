@@ -1,24 +1,3 @@
-!/usr/bin/env python3
-# vim: set encoding=utf-8 tabstop=4 softtabstop=4 shiftwidth=4 expandtab
-#
-# Copyright 2012 KNX-User-Forum e.V.            http://knx-user-forum.de/
-#
-#  This file is part of SmartHome.py.    http://mknx.github.io/smarthome/
-#
-#  SmartHome.py is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  SmartHome.py is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with SmartHome.py.  If not, see <http://www.gnu.org/licenses/>.
-#
-
 import logging
 import socket
 import time
@@ -29,142 +8,229 @@ from uuid import getnode as getmac
 logger = logging.getLogger('')
 
 
-class SmartTV():
+class webOSTV:
 
-    def __init__(self, smarthome, host, port=55000, tvid=1):
+    def __init__(self, smarthome, host, port=3000, lgKey="NOKEY", path="/"):
         self._sh = smarthome
         self._host = host
         self._port = port
-        self._tvid = int(tvid)
+        self._wskey = key = base64_encode(generateRandomString(16, false, true))
+        self._tvkey = lgkey
+        self._path = str(path)
+        self._handshake = false
+        self._connected = false
+        if self._tvkey == "NOKEY":
+        	unset(self._tvkey)  
+    
+    def function connect(self):
+    {
+        ws_handshake_cmd = "GET " . self._path . " HTTP/1.1\r\n"
+        ws_handshake_cmd.= "Upgrade: websocket\r\n"
+        ws_handshake_cmd.= "Connection: Upgrade\r\n"
+        ws_handshake_cmd.= "Sec-WebSocket-Version: 13\r\n"          
+        ws_handshake_cmd.= "Sec-WebSocket-Key: " . self._ws_key . "\r\n"
+        ws_handshake_cmd.= "Host: ".self._host.":".self._port."\r\n\r\n"
+        self._sock = fsockopen(self._host, self._port, errn, errstr, 2)
+        socket_set_timeout(self._sock, 0, 10000)
+        print("Sending WS handshake\n", ws_handshake_cmd)
+        response = send(ws_handshake_cmd)
+        if (response):
+			print("WS Handshake Response:",response)
+		else: 
+            print("ERROR during WS handshake!")
+        preg_match('#Sec-WebSocket-Accept:\s(.*)$#mU', $response, $matches);
+        if ($matches) {
+            $keyAccept = trim($matches[1]);
+            $expectedResonse = base64_encode(pack('H*', sha1($this->ws_key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
+            $this->connected = ($keyAccept === $expectedResonse) ? true : false;
+        } else $this->connected=false;
+        if self._connected:
+        	print( "Sucessfull WS connection to $this->host:$this->port\n\n")
+        return self._connected;  
+    }
+    
+    function lg_handshake()
+    {
+        if (self._connected == False):
+        	self.connect()
+        if (self._connected):
+        	handshake ="{"type":"register","id":"register_0","payload":{"forcePairing":false,"pairingType":"PROMPT","client-key":"HANDSHAKEKEYGOESHERE","manifest":{"manifestVersion":1,"appVersion":"1.1","signed":{"created":"20140509","appId":"com.lge.test","vendorId":"com.lge","localizedAppNames":{"":"LG Remote App","ko-KR":"ë¦¬ëª¨ì»¨ ì•±","zxx-XX":"Ð›Ð“ RÑ�Ð¼otÑ� AÐŸÐŸ"},"localizedVendorNames":{"":"LG Electronics"},"permissions":["TEST_SECURE","CONTROL_INPUT_TEXT","CONTROL_MOUSE_AND_KEYBOARD","READ_INSTALLED_APPS","READ_LGE_SDX","READ_NOTIFICATIONS","SEARCH","WRITE_SETTINGS","WRITE_NOTIFICATION_ALERT","CONTROL_POWER","READ_CURRENT_CHANNEL","READ_RUNNING_APPS","READ_UPDATE_INFO","UPDATE_FROM_REMOTE_APP","READ_LGE_TV_INPUT_EVENTS","READ_TV_CURRENT_TIME"],"serial":"2f930e2d2cfe083771f68e4fe7bb07"},"permissions":["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE","TEST_OPEN","TEST_PROTECTED","CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_INPUT_JOYSTICK","CONTROL_INPUT_MEDIA_RECORDING","CONTROL_INPUT_MEDIA_PLAYBACK","CONTROL_INPUT_TV","CONTROL_POWER","READ_APP_STATUS","READ_CURRENT_CHANNEL","READ_INPUT_DEVICE_LIST","READ_NETWORK_STATE","READ_RUNNING_APPS","READ_TV_CHANNEL_LIST","WRITE_NOTIFICATION_TOAST","READ_POWER_STATE","READ_COUNTRY_INFO"],"signatures":[{"signatureVersion":1,"signature":"eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="}]}}}";
+            if (isset(self._lg_key)) 
+                handshake = str_replace('HANDSHAKEKEYGOESHERE',self._lg_key,handshake);
+            else:
+            	handshake = "{"type":"register","id":"register_0","payload":{"forcePairing":false,"pairingType":"PROMPT","manifest":{"manifestVersion":1,"appVersion":"1.1","signed":{"created":"20140509","appId":"com.lge.test","vendorId":"com.lge","localizedAppNames":{"":"LG Remote App","ko-KR":"ë¦¬ëª¨ì»¨ ì•±","zxx-XX":"Ð›Ð“ RÑ�Ð¼otÑ� AÐŸÐŸ"},"localizedVendorNames":{"":"LG Electronics"},"permissions":["TEST_SECURE","CONTROL_INPUT_TEXT","CONTROL_MOUSE_AND_KEYBOARD","READ_INSTALLED_APPS","READ_LGE_SDX","READ_NOTIFICATIONS","SEARCH","WRITE_SETTINGS","WRITE_NOTIFICATION_ALERT","CONTROL_POWER","READ_CURRENT_CHANNEL","READ_RUNNING_APPS","READ_UPDATE_INFO","UPDATE_FROM_REMOTE_APP","READ_LGE_TV_INPUT_EVENTS","READ_TV_CURRENT_TIME"],"serial":"2f930e2d2cfe083771f68e4fe7bb07"},"permissions":["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE","TEST_OPEN","TEST_PROTECTED","CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_INPUT_JOYSTICK","CONTROL_INPUT_MEDIA_RECORDING","CONTROL_INPUT_MEDIA_PLAYBACK","CONTROL_INPUT_TV","CONTROL_POWER","READ_APP_STATUS","READ_CURRENT_CHANNEL","READ_INPUT_DEVICE_LIST","READ_NETWORK_STATE","READ_RUNNING_APPS","READ_TV_CHANNEL_LIST","WRITE_NOTIFICATION_TOAST","READ_POWER_STATE","READ_COUNTRY_INFO"],"signatures":[{"signatureVersion":1,"signature":"eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="}]}}}";
+            	print("Sending LG handshake",handshake)
+            response = self.send(hybi10Encode(handshake));
+            if (response == True):
+            {
+                print("\nLG Handshake Response\n".json_string(response)."\n")
+                result = json_array(response);
+                if (result && array_key_exists('id',result) &&  result['id']=='result_0' && array_key_exists('client-key',$result['payload'])):
+                    // LG client-key received: COMPARE!!!
+                    if (self._lg_key == result['payload']['client-key']):
+                        print("LG Client-Key successfully approved\n") 
+                	else if ($result && array_key_exists('id',$result) &&  $result['id']=='register_0' && array_key_exists('pairingType',$result['payload']) && array_key_exists('returnValue',$result['payload'])):
+                		// LG TV is prompting for access rights
+                    if (result['payload']['pairingType'] == "PROMPT" && result['payload']['returnValue'] == "true"): 
+                        $starttime = microtime(1);
+                        $lg_key_received = false;
+                        $error_received = false;
+                        do {
+                            response = @fread(self._sock, 8192);
+                            result = json_array(response);
+                            if (result && array_key_exists('id',result) &&  result['id']=='register_0' && is_array(result['payload']) && array_key_exists('client-key',result['payload'])):
+                            
+                                lg_key_received = true
+                                self._lg_key = result['payload']['client-key']
+                                print("LG Client-Key successfully received:",self._lg_key) 
+                            elif (result && array_key_exists('id',result) &&  result['id']=='register_0' && array_key_exists('error',result)):
+                                error_received = true;
+                                print("ERROR: ",result['error'])
+                            usleep(200000);
+                            time = microtime(1);
+                        } while (time-starttime<60 && !lg_key_received && !error_received);
+                    }
+                }
+            } else:
+            	print("ERROR during LG handshake:")
+        } else return FALSE
+    }
 
-    def push(self, key):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self._host, int(self._port)))
-            logger.debug("Connected to {0}:{1}".format(self._host, self._port))
-        except Exception:
-            logger.warning("Could not connect to %s:%s, to send key: %s." %
-                           (self._host, self._port, key))
-            return
+    def disconnect(self):
+        self._connected =false
+        @fclose(self._sock)
+        print("Connection closed to ",self._host)
 
-        src = s.getsockname()[0]            # ip of remote
-        mac = self._int_to_str(getmac())    # mac of remote
-        remote = 'sh.py remote'             # remote name
-        dst = self._host                    # ip of tv
-        app = b'python'                      # iphone..iapp.samsung
-        tv = b'UE32ES6300'                   # iphone.UE32ES6300.iapp.samsung
+    def send(self, msg):
+        @fwrite(self._sock, msg);
+        usleep(250000);
+        response = @fread(self._sock, 8192);
+        return response;
+    
+    def send_command(self, cmd)
+        if (self._connected == False):
+        	self.connect()
+        if (self._connected == True):
+            print("Sending command      :", cmd)
+            response = self._send(hybi10Encode(cmd))
+            if (response):
+                print("Command response     : ",json_string(response))
+            else:
+                print("Error sending command:",cmd)
+            return response          
+    
+    def message(msg):
+        command = "{"id":"message","type":"request","uri":"ssap://system.notifications/createToast","payload":{"message": "msg"}}"
+        self._send_command(command)
+    
+    def power_off():
+        command = "{"id":"power_off","type":"request","uri":"ssap://system/turnOff"}"
+        self._send_command(command)
 
-        logger.debug("src = {0}, mac = {1}, remote = {2}, dst = {3}, app = {4}, tv = {5}".format(
-            src, mac, remote, dst, app, tv))
+    def set_volume(vol):
+        command = "{"id":"set_volume","type":"request","uri":"ssap://audio/setVolume","payload":{"volume":".vol."}}"
+        self._send_command(command)
+        
+	def hybi10Encode(payload, type = 'text', masked = true) {
+        frameHead = array();
+        frame = '';
+        payloadLength = strlen(payload);
 
-        src = base64.b64encode(src.encode())
-        mac = base64.b64encode(mac.encode())
-        cmd = base64.b64encode(key.encode())
-        rem = base64.b64encode(remote.encode())
+        switch (type) {
+            case 'text':
+                // first byte indicates FIN, Text-Frame (10000001):
+                frameHead[0] = 129;
+                break;
 
-        msg = bytearray([0x64, 0])
-        msg.extend([len(src), 0])
-        msg.extend(src)
-        msg.extend([len(mac), 0])
-        msg.extend(mac)
-        msg.extend([len(rem), 0])
-        msg.extend(rem)
+            case 'close':
+                // first byte indicates FIN, Close Frame(10001000):
+                frameHead[0] = 136;
+                break;
 
-        pkt = bytearray([0])
-        pkt.extend([len(app), 0])
-        pkt.extend(app)
-        pkt.extend([len(msg), 0])
-        pkt.extend(msg)
+            case 'ping':
+                // first byte indicates FIN, Ping frame (10001001):
+                frameHead[0] = 137;
+                break;
 
-        try:
-            s.send(pkt)
-        except:
-            try:
-                s.close()
-            except:
-                pass
-            return
+            case 'pong':
+                // first byte indicates FIN, Pong frame (10001010):
+                frameHead[0] = 138;
+                break;
+        }
 
-        msg = bytearray([0, 0, 0])
-        msg.extend([len(cmd), 0])
-        msg.extend(cmd)
+        // set mask and payload length (using 1, 3 or 9 bytes)
+        if (payloadLength > 65535):
+            payloadLengthBin = str_split(sprintf('%064b', payloadLength), 8);
+            frameHead[1] = (masked === true) ? 255 : 127;
+            for (i = 0; i < 8; i++):
+                frameHead[i + 2] = bindec(payloadLengthBin[i]);
 
-        pkt = bytearray([0])
-        pkt.extend([len(tv), 0])
-        pkt.extend(tv)
-        pkt.extend([len(msg), 0])
-        pkt.extend(msg)
-
-        try:
-            s.send(pkt)
-        except:
-            return
-        finally:
-            try:
-                s.close()
-            except:
-                pass
-        logger.debug("Send {0} to Smart TV".format(key))
-        time.sleep(0.1)
-
-    def parse_item(self, item):
-        if 'smarttv_id' in item.conf:
-            tvid = int(item.conf['smarttv_id'])
+            // most significant bit MUST be 0 (close connection if frame too big)
+            if (frameHead[2] > 127):
+                this->close(1004)
+                return false
+        elif (payloadLength > 125):
+            payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8)
+            frameHead[1] = ($masked === true) ? 254 : 126
+            frameHead[2] = bindec($payloadLengthBin[0])
+            frameHead[3] = bindec($payloadLengthBin[1])
         else:
-            tvid = 1
+            frameHead[1] = (masked === true) ? payloadLength + 128 : payloadLength
+        
 
-        if tvid != self._tvid:
-            return None
+        // convert frame-head to string:
+        for(array_keys(frameHead) as i):
+            frameHead[i] = chr(frameHead[i])
 
-        if 'smarttv' in item.conf:
-            logger.debug("Smart TV Item {0} with value {1} for TV ID {2} found!".format(
-                item, item.conf['smarttv'], tvid))
-            return self.update_item
-        else:
-            return None
+        if (masked === true):
+            // generate a random mask:
+            mask = array();
+            for (i = 0; i < 4; i++):
+                mask[i] = chr(rand(0, 255))
 
-    def update_item(self, item, caller=None, source=None, dest=None):
-        val = item()
-        if isinstance(val, str):
-            if val.startswith('KEY_'):
-                self.push(val)
-            return
-        if val:
-            keys = item.conf['smarttv']
-            if isinstance(keys, str):
-                keys = [keys]
-            for key in keys:
-                if isinstance(key, str) and key.startswith('KEY_'):
-                    self.push(key)
+            frameHead = array_merge(frameHead, mask)
+        frame = implode('', frameHead)
+        // append payload to frame:
+        for (i = 0; i < payloadLength; i++):
+            frame .= (masked === true) ? payload[i] ^ mask[i % 4] : payload[i]
+        return frame
+        
+  def generateRandomString(length = 10, $addSpaces = true, $addNumbers = true)
+    {  
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}';
+        $useChars = array();
+        // select some random chars:    
+        for($i = 0; $i < $length; $i++)
+        {
+            $useChars[] = $characters[mt_rand(0, strlen($characters)-1)];
+        }
+        // add spaces and numbers:
+        if($addSpaces === true)
+        {
+            array_push($useChars, ' ', ' ', ' ', ' ', ' ', ' ');
+        }
+        if($addNumbers === true)
+        {
+            array_push($useChars, rand(0,9), rand(0,9), rand(0,9));
+        }
+        shuffle($useChars);
+        $randomString = trim(implode('', $useChars));
+        $randomString = substr($randomString, 0, $length);
+        return $randomString;
+    }
 
-    def parse_logic(self, logic):
-        pass
 
-    def run(self):
-        self.alive = True
-
-    def stop(self):
-        self.alive = False
-
-    def _int_to_words(self, int_val, word_size, num_words):
-        max_int = 2 ** (num_words * word_size) - 1
-
-        if not 0 <= int_val <= max_int:
-            raise IndexError('integer out of bounds: %r!' % hex(int_val))
-
-        max_word = 2 ** word_size - 1
-
-        words = []
-        for _ in range(num_words):
-            word = int_val & max_word
-            words.append(int(word))
-            int_val >>= word_size
-
-        return tuple(reversed(words))
-
-    def _int_to_str(self, int_val):
-        words = self._int_to_words(int_val, 8, 6)
-        tokens = ['%.2X' % i for i in words]
-        addr = '-'.join(tokens)
-
-        return addr
+    function json_array($str)
+    {
+        $result = json_decode(json_string($str),true);
+        return $result;
+    }
+    
+    function json_string($str)
+    {
+        $from = strpos($str,"{");
+        $to = strripos($str,"}");
+        $len = $to-$from+1;
+        $result = substr($str,$from,$len);
+        return $result;
+    } 
