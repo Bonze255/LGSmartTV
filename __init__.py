@@ -208,14 +208,17 @@ class webOSTV:
 		frame = implode('', frameHead)
 		#// append payload to frame:
 		for i in range(i, payloadLength):
-			frame += (masked == true) ? payload[i] ^ mask[i % 4] : payload[i]
+			if masked == True:
+				frame += payload[i] ^ mask[i % 4]
+			else:
+				frame += payload[i]
 		return frame
 
-	def generateRandomString(length = 10, addSpaces = true, addNumbers = true)
+	def generateRandomString(length = 10, addSpaces = true, addNumbers = true):
 		characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
 		useChars = []
 		#// select some random chars:
-		for(i = 0 i < length i++):
+		for i in range(i, length):
 			useChars[] = characters[mt_rand(0, strlen(characters)-1)]
 
 		#// add spaces and numbers:
