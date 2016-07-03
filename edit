@@ -1,0 +1,329 @@
+__author__ = 'Marni'
+import logging
+import socket
+import time
+import base64
+from base64 import urlsafe_b64encode as encode
+from base64 import urlsafe_b64decode as decode
+import hmac
+import json
+import binascii
+import hashlib
+import sys
+import random
+import re
+import pprint
+import struct
+from uuid import getnode as getmac
+logger = logging.getLogger('')
+
+class WebOsTv:
+
+    def __init__(self, host = '127.0.0.1', port=3000, lgKey='', path="/"):
+        #self._sh = smarthome
+        self._host = host
+        self._port = port
+        self._wskey = encode(self.generateRandomString(16, False, True))
+        self._tvkey = lgKey
+        self._path = str(path)
+        self._handshake = False
+        self._handshakecode = '' ##CODE des HANDSHAKES!
+        self._connected = False
+
+        self.connect()					   #//
+        self.lg_handshake()
+        self.message("YEAH, it works!!!")
+        #print("YEAH, it works!!!")
+        #time.sleep(5)
+        self.set_volume(75)
+        #time.sleep(10)
+        #self.disconnect()
+        ##prog
+
+    def connect(self):
+        ws_handshake_cmd = "GET "+str(self._path)+" HTTP/1.1\r\n"
+        ws_handshake_cmd += "Upgrade: websocket\r\n"
+        ws_handshake_cmd += "Connection: Upgrade\r\n"
+        ws_handshake_cmd += "Sec-WebSocket-Version: 13\r\n"
+        ws_handshake_cmd += "Sec-WebSocket-Key: "+ str(self._wskey) + "\r\n"
+        ws_handshake_cmd += "Host: "+ str(self._host)+":"+str(self._port)+"\r\n\r\n"
+
+        try:
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._sock.connect((self._host, self._port))
+            #self._sock.settimeout(20)
+        except:
+            print("Verbindung zu ", str(self._host), "nicht möglich!")
+
+        print("Sending WS handshake", ws_handshake_cmd)
+
+        response = self.send(ws_handshake_cmd)
+
+        #prüfen ob etwas zurpckkommt
+        if response == '':
+            print("ERROR during WS handshake!")
+        else:
+            print("WS Handshake Response (empfangene daten):", response)
+            matches = re.search('Sec-WebSocket-Accept:\s*(.*=)', response.decode())
+            returnkey = matches.groups()
+            returnkey = returnkey[0]
+            #print("Match in response ",returnkey)
+
+        tvkey = '' # von TV 28 stellen
+        wskey = self._wskey #zu TV 26 stellen
+        key = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+        keys = str("%s%s" % (wskey , key)).encode('utf-8')
+        nonce = base64.b64encode(keys)
+        pdigest= base64.b64encode(hashlib.sha1(keys).digest())
+        pdigest = pdigest.decode('UTF-8')
+
+        print('return', returnkey, ' = ',pdigest )
+        if returnkey == pdigest:
+            self._connected = True
+            print("Key Akzeptiert")
+        else:
+            self._connected = False
+            print("Key nicht Akzeptiert")
+
+        if self._connected:
+            print( "Sucessfull WS connection to", self._host, ": ", self._port)
+        return self._connected
+
+    def lg_handshake(self):
+        if self._connected == False:
+            self.connect()
+        if self._connected:
+            handshake ='{"type":"register","id":"register_0","payload":{"forcePairing":False,"pairingType":"PROMPT","client-key":"HANDSHAKECODE","manifest":{"manifestVersion":1,"appVersion":"1.1","signed":{"created":"20140509","appId":"com.lge.test","vendorId":"com.lge","localizedAppNames":{"":"LG Remote App","ko-KR":"ë¦¬ëª¨ì»¨ ì•±","zxx-XX":"Ð›Ð“ RÑ?Ð¼otÑ? AÐŸÐŸ"},"localizedVendorNames":{"":"LG Electronics"},"permissions":["TEST_SECURE","CONTROL_INPUT_TEXT","CONTROL_MOUSE_and_KEYBOARD","READ_INSTALLED_APPS","READ_LGE_SDX","READ_NOTIFICATIONS","SEARCH","WRITE_SETTINGS","WRITE_NOTIFICATION_ALERT","CONTROL_POWER","READ_CURRENT_CHANNEL","READ_RUNNING_APPS","READ_UPDATE_INFO","UPDATE_FROM_REMOTE_APP","READ_LGE_TV_INPUT_EVENTS","READ_TV_CURRENT_TIME"],"serial":"2f930e2d2cfe083771f68e4fe7bb07"},"permissions":["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE","TEST_OPEN","TEST_PROTECTED","CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_INPUT_JOYSTICK","CONTROL_INPUT_MEDIA_RECORDING","CONTROL_INPUT_MEDIA_PLAYBACK","CONTROL_INPUT_TV","CONTROL_POWER","READ_APP_STATUS","READ_CURRENT_CHANNEL","READ_INPUT_DEVICE_LIST","READ_NETWORK_STATE","READ_RUNNING_APPS","READ_TV_CHANNEL_LIST","WRITE_NOTIFICATION_TOAST","READ_POWER_STATE","READ_COUNTRY_INFO"],"signatures":[{"signatureVersion":1,"signature":"eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="}]}}}'
+            if self._tvkey != '':
+               handshake =  handshake.replace('HANDSHAKECODE' ,self._tvkey)
+            else:
+                handshake = '{"type":"register","id":"register_0","payload":{"forcePairing":False,"pairingType":"PROMPT","manifest":{"manifestVersion":1,"appVersion":"1.1","signed":{"created":"20140509","appId":"com.lge.test","vendorId":"com.lge","localizedAppNames":{"":"LG Remote App","ko-KR":"ë¦¬ëª¨ì»¨ ì•±","zxx-XX":"Ð›Ð“ RÑ?Ð¼otÑ? AÐŸÐŸ"},"localizedVendorNames":{"":"LG Electronics"},"permissions":["TEST_SECURE","CONTROL_INPUT_TEXT","CONTROL_MOUSE_and_KEYBOARD","READ_INSTALLED_APPS","READ_LGE_SDX","READ_NOTIFICATIONS","SEARCH","WRITE_SETTINGS","WRITE_NOTIFICATION_ALERT","CONTROL_POWER","READ_CURRENT_CHANNEL","READ_RUNNING_APPS","READ_UPDATE_INFO","UPDATE_FROM_REMOTE_APP","READ_LGE_TV_INPUT_EVENTS","READ_TV_CURRENT_TIME"],"serial":"2f930e2d2cfe083771f68e4fe7bb07"},"permissions":["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE","TEST_OPEN","TEST_PROTECTED","CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_INPUT_JOYSTICK","CONTROL_INPUT_MEDIA_RECORDING","CONTROL_INPUT_MEDIA_PLAYBACK","CONTROL_INPUT_TV","CONTROL_POWER","READ_APP_STATUS","READ_CURRENT_CHANNEL","READ_INPUT_DEVICE_LIST","READ_NETWORK_STATE","READ_RUNNING_APPS","READ_TV_CHANNEL_LIST","WRITE_NOTIFICATION_TOAST","READ_POWER_STATE","READ_COUNTRY_INFO"],"signatures":[{"signatureVersion":1,"signature":"eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="}]}}}'
+                print("Sending LG handshake",handshake)
+            response = self.send(handshake)
+
+            if response == True:
+                print("LG Handshake Response",self.json_string(response))
+                result = self.json_array(response)
+                if result and ('id' in result) and	result['id']=='result_0' and ('client-key' in result['payload']):
+
+                    #// LG client-key received: COMPARE!!!
+                    if self._lg_key == result['payload']['client-key']:
+                        print("LG Client-Key successfully approved")
+                    else:
+                        if result and ('id'in result) and  result['id']=='register_0' and ('pairingType' in result['payload']) and ('returnValue' in result['payload']):
+                            #// LG TV is prompting for access rights
+                            if (result['payload']['pairingType'] == 'PROMPT') and (result['payload']['returnValue'] == 'True'):
+                                starttime = time.time()
+                                lg_key_received = False
+                                error_received = False
+                                while (time-starttime<60 and not lg_key_received and not error_received):
+                                    response = self._sock.read(8192)
+                                    result = self.json_array(response)
+                                    if result == True and ('id' in result) and	result['id']=='register_0' and is_array(result['payload']) and ('client-key' in result['payload']):
+                                        lg_key_received = True
+                                        self._lg_key = result['payload']['client-key']
+                                        print("LG Client-Key successfully received:",self._lg_key)
+                                    elif result and ('id' in result) and  result['id']=='register_0' and ('error' in result):
+                                        error_received = True
+                                        print("ERROR: ",result['error'])
+                                    time.sleep(200000 / 1000000.0)#usleep(200000)
+                                    time = time.time()
+            else:
+                print("ERROR during LG handshake:")
+        else:
+            return False
+
+    def disconnect(self):
+        self._connected = False
+        self._sock.close()
+        print("Connection closed to ",self._host)
+
+    def send(self, msg):
+        #print("Send Funktion message", msg)
+        #msg = msg.encode()
+        msg = self.hybi10Encode(msg)
+        print('msg to send ', msg)
+        self._sock.send(msg)
+        response = self._sock.recv(8192)
+
+        return response
+
+    #Erzeuge zufälligen String
+    def generateRandomString(self, length = 10, addSpaces = True, addNumbers = True):
+        characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
+        useChars = []
+        #// select some random chars:
+        for i in range(0, length):
+            useChars.append( characters[random.randint (0, len(characters)-1)])
+
+        #// add spaces and numbers:
+        if(addSpaces == True):
+            useChars.append(' ', ' ', ' ', ' ', ' ', ' ')
+
+        if(addNumbers == True):
+            useChars.append(random.randint(0,9))
+            useChars.append(random.randint(0,9))
+            useChars.append(random.randint(0,9))
+
+        random.shuffle(useChars)
+        randomString = ''.join([str(i) for i in useChars])
+        randomString = randomString.strip(' \t\n\r')
+        randomString = randomString[0:length]
+
+        return str(randomString).encode('utf-8')
+    def hybi10Encode(self,payload, type = 'text',masked = True):# masked = True):
+             frameHead = ['0','1','2','3']
+             payloadLength = len(payload)
+
+             #FRAMEHEAD
+             if type == 'text':
+                 #// first byte indicates FIN, Text-Frame (10000001):
+                 frameHead[0] = 129#struct.pack('>B', 129)#129
+             elif type == 'close':
+                 #// first byte indicates FIN, Close Frame(10001000):
+                 frameHead[0] = 136#struct.pack('>B', 136)#136
+             elif type == 'ping':
+                 #// first byte indicates FIN, Ping frame (10001001):
+                 frameHead[0] = 137#struct.pack('>B', 137)
+             elif type == 'pong':
+                 #// first byte indicates FIN, Pong frame (10001010):
+                 frameHead[0] = 138#struct.pack('>B', 138) #138
+    #         #################################################################
+    #         #// set mask and payload length (using 1, 3 or 9 bytes)
+             if (payloadLength > 65535):
+                 frameHead[1] = 127#struct.pack('>B', 127)
+
+                 if masked == True:
+                     frameHead[1] = 255#struct.pack('>B', 255)
+                 else:
+                     frameHead[1] = 127#struct.pack('>B', 127)
+                 payloadLengthBin = payloadLength#struct.pack('>H',payloadLength)
+
+                 frameHead[2] = int(payloadLengthBin[0])
+                 frameHead[3] = int(payloadLengthBin[1])
+
+                 #// most significant bit MUST be 0 (close connection if frame too big)
+                 if (frameHead[2] > 127):
+                     self.close(1004)
+                     return False
+    #
+             elif payloadLength > 125 and payloadLength < 65536:
+                 payloadLengthBin = struct.pack('>H',payloadLength)
+                 if masked == True:
+                     frameHead[1] = 254#struct.pack('>B', 254)
+                 else:
+                     frameHead[1] = 126#struct.pack('>B', 126)
+    #
+                 frameHead[2] = payloadLengthBin[0]#struct.pack('>B', payloadLengthBin[0])
+                 frameHead[3] = payloadLengthBin[1]#struct.pack('>B', payloadLengthBin[1])
+    #
+             else:#<=125
+                 if masked ==  True:
+                     payloadLength = payloadLength + 128
+                 else:
+                     payloadLength = payloadLength
+                 frameHead[1] = struct.pack('>B',payloadLength)
+    #
+             #// convert frame-head to string:###########################################################################
+             frameHeadstr = ','.join(map(str, frameHead))
+
+            #// Masking the framehead
+             if masked == True:
+                 #// generate a random mask:
+                 mask = ['0','1','2','3']
+                 for i in range(0,3):
+                     mask[i] = int(random.randint(0, 255))#struct.pack('>B', random.randint(0, 255))#chr(random.randint(0, 255))
+                 maskstr = ','.join(map(str, mask))
+                 print('maskstr', maskstr)
+                 frameHeadstr = frameHeadstr + ','+ maskstr
+                 #|framehead|maskstr|payload^mask[i%4]
+             frame = 0
+    #         #// append payload to frame:
+             for i in range(0, payloadLength):
+                 if masked == True:
+                     #print('payload', payload[i], 'mask', mask[i])
+                     frame += (payload[i]) ^ (mask[i % 4])
+                 else:
+                     frame += payload[i]
+
+             print('Frame', frame)
+
+             return (frame)
+
+    def send_command(self, cmd):
+        if self._connected == False:
+            self.connect()
+        else:
+            print("Sending command:", cmd)
+            response = self.send(cmd)
+            if (response):
+                print("Command response:", self.json_string(response))
+            else:
+                print("Error sending command:", cmd)
+            return response
+    def json_array(self,str):
+        #result = json_decode(json_string(str),True)
+        result = json.JSONEncoder.encode(self.json_string(str))
+        return result
+    def json_string(self,str):
+        start = str.find("{")
+        end = str.find("}")
+        len = end-start+1
+        result = str.split(str,start,len)
+        return result
+
+##FIle funktions
+    def _int_to_str(self, int_val):
+        words = self._int_to_words(int_val, 8, 6)
+        tokens = ['%.2X' % i for i in words]
+        addr = '-'.join(tokens)
+
+        return addr
+    def _checkfile(self):
+        import os
+        path = os.environ['HOME']  # der aktuelle Benutzerordner
+        if os.path.exists(path) == True:
+            print(path, "existiert.")
+        else:
+            print(path, "existiert nicht.")
+    def _createfile(self):
+        path = os.environ['HOME'] + "/Python/testdatei"
+        d = open(path, "w")
+        d.close
+    def _readfile(self):
+        # Zunächst werden mehrere Zeilen in eine Datei geschrieben:
+        d = open(path, "w")
+        d.write("Europa\nAsien\nAfrika\nAmerika\nAustralien")
+        d.close
+
+        # Jetzt werden die verschiedenen Methoden zum Lesen angewendet:
+        d = open(path)
+        content = d.read()
+        print("Gesamter Inhalt:", content)
+        d.close
+
+        d = open(path)
+        print("Erste Zeile: ", d.readline().replace("\n", ""))
+        print("Zweite Zeile:", d.readline().replace("\n", ""))
+        print("Dritte Zeile:", d.readline().replace("\n", ""))
+        d.close
+
+        d = open(path)
+        content = d.readlines()
+        z = 1
+        for line in content:
+            print("Zeile", str(z) + ":", line.replace("\n", ""))
+            z += 1
+        d.close
+
+##Funktionen des TVS
+    def message(self,msg):
+        command = '{"id":"message","type":"request","uri":"ssap://system.notifications/createToast","payload":{"message": "msg"}}'
+        self.send_command(command)
+        return None
+    def set_volume(self,vol):
+        command = '{"id":"set_volume","type":"request","uri":"ssap://audio/setVolume","payload":{"volume":".vol."}}'
+        self.send_command(command)
+
+#tv = WebOsTv('127.0.0.1',3000,'')
+tv = WebOsTv('192.168.178.56',3000,'zBdJSK8x3fQR+Pasbt4qFxaXOcM=')
