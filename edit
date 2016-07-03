@@ -242,7 +242,7 @@ class WebOsTv:
              for i in range(0, payloadLength):
                  if masked == True:
                      #print('payload', payload[i], 'mask', mask[i])
-                     frame += (payload[i]) ^ (mask[i % 4])
+                     frame += int(ord(ws_handshake_cmd[i])) ^ int(mask[i % 4])
                  else:
                      frame += payload[i]
 
