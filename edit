@@ -222,7 +222,7 @@ class WebOsTv:
                      payloadLength = payloadLength + 128
                  else:
                      payloadLength = payloadLength
-                 frameHead[1] = struct.pack('>B',payloadLength)
+                 #frameHead[1] = struct.pack('>B',payloadLength)
     #
              #// convert frame-head to string:###########################################################################
              frameHeadstr = ','.join(map(str, frameHead))
