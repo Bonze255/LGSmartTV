@@ -96,29 +96,29 @@ class WebOsTv:
             if response == True:
                 print("LG Handshake Response",json_string(response))
                 result = json_array(response)
-                if result and ('id' in result) and	result['id']=='result_0' and ('client-key' in result['payload']):
-                    #// LG client-key received: COMPARE!!!
-                    if self._lg_key == result['payload']['client-key']:
-                        print("LG Client-Key successfully approved")
-                    else:
-                        if result and ('id'in result) and  result['id']=='register_0' and ('pairingType' in result['payload']) and ('returnValue' in result['payload']):
-                            #// LG TV is prompting for access rights
-                            if (result['payload']['pairingType'] == 'PROMPT') and (result['payload']['returnValue'] == 'True'):
-                                starttime = time.time()
-                                lg_key_received = False
-                                error_received = False
-                                while (time-starttime<60 and not lg_key_received and not error_received):
-                                    response = read(self._sock, 8192)
-                                    result = json_array(response)
-                                    if result == True and ('id' in result) and	result['id']=='register_0' and is_array(result['payload']) and ('client-key' in result['payload']):
-                                        lg_key_received = True
-                                        self._lg_key = result['payload']['client-key']
-                                        print("LG Client-Key successfully received:",self._lg_key)
-                                    elif result and ('id' in result) and  result['id']=='register_0' and ('error' in result):
-                                        error_received = True
-                                        print("ERROR: ",result['error'])
-                                    time.sleep(200000 / 1000000.0)#usleep(200000)
-                                    time = time.time()
+                
+if 'id' in result.keys() and result['id']=='result_0' and 'client-key' in result['payload'].keys():
+	#// LG client-key received: COMPARE!!!
+	if self._lg_key == result['payload']['client-key']:
+		print("LG Client-Key successfully approved")
+        		
+elif result and 'id'in result.keys() and  result['id'] =='register_0' and 'pairingType' in result['payload'].keys() and 'returnValue' in result['payload'].keys():
+        	starttime = time.time()
+        	print(starttime)
+        	lg_key_received = False
+        	error_received = False
+        	while (time.time() -starttime <60 and not lg_key_received and not error_received):
+        		response = read(self._sock, 8192)
+        		result = json_array(response)
+        		if result == True and ('id' in result) and	result['id']=='register_0' and type(result['payload']).__name__ == 'list' and ('client-key' in result['payload']):
+        			lg_key_received = True
+        			self._lg_key = result['payload']['client-key']
+        			print("LG Client-Key successfully received:",self._lg_key)
+        		elif result and ('id' in result) and  result['id']=='register_0' and ('error' in result):
+        			error_received = True
+        			print("ERROR: ",result['error'])
+        		time.sleep(200000 / 1000000.0)#usleep(200000)
+        		time = time.time()
             else:
                 print("ERROR during LG handshake:")
         else:
