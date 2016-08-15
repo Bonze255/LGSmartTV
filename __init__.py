@@ -70,8 +70,9 @@ class LGSmartTV():
     def stop(self):
         self.alive = False
         return None
-        
+    #    
     #Creates a Websocket Connection    
+    #
     def connect(self):
         ws_handshake_cmd = "GET "+str(self._path)+" HTTP/1.1\r\n"
         ws_handshake_cmd += "Upgrade: websocket\r\n"
@@ -111,11 +112,7 @@ class LGSmartTV():
         else:
             self._connected = False
             print("Key nicht Akzeptiert")
-        #except:
-        #    print('Fehler!')
-        #else:
-        #    self._connected = False
-    
+
         if self._connected:
             print( "Sucessfull WS connection to", self._host, ": ", self._port)
         return self._connected
@@ -127,7 +124,9 @@ class LGSmartTV():
         print("Connection closed to ",self._host)
         return None
         
+    #
     #Creates a Handshake with the TV (Pairing)
+    #
     def lg_handshake(self):
         if self._connected == False:
             self.connect()
@@ -169,8 +168,10 @@ class LGSmartTV():
                 print("ERROR during LG handshake:")
         else:
             return False
-        
+    
+    #    
     #Send Websocket Messages to the TV
+    #
     def send(self, msg):
         print("Send Funktion message", msg )
         self._sock.send(msg.encode())
@@ -179,8 +180,10 @@ class LGSmartTV():
         response = self._sock.recv(8192)
         print("Send Response", response)
         return response
-        
+    
+    #    
     #Sends Commands to the TV
+    #
     def send_command(self, cmd):
         if (self._connected == False):
             self.connect()
@@ -192,103 +195,108 @@ class LGSmartTV():
             else:
                 print("Error sending command:",cmd)
             return response
+    
+    #
     #Encode the Packets wich are send to the TV    
+    #
     def hybi10Encode(self,payload, type = 'text', masked = True):
-    frameHead = []
-    frame = ''
-    payloadLength = len(payload)
-
-    if type == 'text':
-        #// first byte indicates FIN, Text-Frame (10000001):
-        frameHead[0] = 129
-    elif type == 'close':
-        #// first byte indicates FIN, Close Frame(10001000):
-        frameHead[0] = 136
-    elif type == 'ping':
-        #// first byte indicates FIN, Ping frame (10001001):
-        frameHead[0] = 137
-    elif type == 'pong':
-        #// first byte indicates FIN, Pong frame (10001010):
-        frameHead[0] = 138
-
-    #// set mask and payload length (using 1, 3 or 9 bytes)
-    if (payloadLength > 65535):
-        payloadLengthBin = str_split(sprintf('%064b', payloadLength), 8)
-        if masked == True:
-            frameHead[1] = 255
-        else:
-            frameHead[1] =  127
-
-        for i in  range(0,8):
-            frameHead[i + 2] = bindec(payloadLengthBin[i])
-
-        #// most significant bit MUST be 0 (close connection if frame too big)
-        if (frameHead[2] > 127):
-            self.close(1004)
-            return False
-    elif payloadLength > 125:
-        ##payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8)
-
-        if masked == True:
-            frameHead[1] = 254
-        else:
-            frameHead[1] = 126
-        frameHead[2] = bindec(payloadLengthBin[0])
-        frameHead[3] = bindec(payloadLengthBin[1])
-    else:
-        if masked ==  True:
-            frameHead[1] = payloadLength + 128
-        else:
-            frameHead[1] = payloadLength
-
-    #// convert frame-head to string:
-    for i in frameHead.iterkeys():
-        frameHead[i] = chr(frameHead[i])
-
-    if masked == True:
-        #// generate a random mask:
-        mask = []
-        for i in range(0,4):
-            mask[i] = chr(rand(0, 255))
-        frameHead = array_merge(frameHead, mask)
-    frame = implode('', frameHead)
-    #// append payload to frame:
-    for i in range(i, payloadLength):
-        if masked == True:
-            frame += payload[i] ^ mask[i % 4]
-        else:
-            frame += payload[i]
-    return frame
+        frameHead = []
+        frame = ''
+        payloadLength = len(payload)
     
+        if type == 'text':
+            #// first byte indicates FIN, Text-Frame (10000001):
+            frameHead[0] = 129
+        elif type == 'close':
+            #// first byte indicates FIN, Close Frame(10001000):
+            frameHead[0] = 136
+        elif type == 'ping':
+            #// first byte indicates FIN, Ping frame (10001001):
+            frameHead[0] = 137
+        elif type == 'pong':
+            #// first byte indicates FIN, Pong frame (10001010):
+            frameHead[0] = 138
+    
+        #// set mask and payload length (using 1, 3 or 9 bytes)
+        if (payloadLength > 65535):
+            payloadLengthBin = str_split(sprintf('%064b', payloadLength), 8)
+            if masked == True:
+                frameHead[1] = 255
+            else:
+                frameHead[1] =  127
+    
+            for i in  range(0,8):
+                frameHead[i + 2] = bindec(payloadLengthBin[i])
+    
+            #// most significant bit MUST be 0 (close connection if frame too big)
+            if (frameHead[2] > 127):
+                self.close(1004)
+                return False
+        elif payloadLength > 125:
+            ##payloadLengthBin = str_split(sprintf('%016b', $payloadLength), 8)
+    
+            if masked == True:
+                frameHead[1] = 254
+            else:
+                frameHead[1] = 126
+            frameHead[2] = bindec(payloadLengthBin[0])
+            frameHead[3] = bindec(payloadLengthBin[1])
+        else:
+            if masked ==  True:
+                frameHead[1] = payloadLength + 128
+            else:
+                frameHead[1] = payloadLength
+    
+        #// convert frame-head to string:
+        for i in frameHead.iterkeys():
+            frameHead[i] = chr(frameHead[i])
+    
+        if masked == True:
+            #// generate a random mask:
+            mask = []
+            for i in range(0,4):
+                mask[i] = chr(rand(0, 255))
+            frameHead = array_merge(frameHead, mask)
+        frame = implode('', frameHead)
+        #// append payload to frame:
+        for i in range(i, payloadLength):
+            if masked == True:
+                frame += payload[i] ^ mask[i % 4]
+            else:
+                frame += payload[i]
+        return frame
+    
+    #
     #Generates a Random String for Websocket Connection
+    #
     def generateRandomString(self, length = 10, addSpaces = True, addNumbers = True):
-    characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
-    useChars = []
-    #// select some random chars:
-    for i in range(0, length):
-        useChars.append( characters[random.randint (0, len(characters)-1)])
-
-    #// add spaces and numbers:
-    if(addSpaces == True):
-        useChars.append(' ', ' ', ' ', ' ', ' ', ' ')
-
-    if(addNumbers == True):
-
-        useChars.append(random.randint(0,9))
-        useChars.append(random.randint(0,9))
-        useChars.append(random.randint(0,9))
-    random.shuffle(useChars)
-    randomString = ''.join([str(i) for i in useChars])
-    randomString = randomString.strip(' \t\n\r')
-    randomString = randomString[0:length]
-    print("RandomString", randomString)
-    return randomString
+        characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"Â§$%&/()=[]{}'
+        useChars = []
+        #// select some random chars:
+        for i in range(0, length):
+            useChars.append( characters[random.randint (0, len(characters)-1)])
     
-    #Return a Json-Conform String    
-    def json_string(self,str):
-    start = strpos(str,"{")
-    end = strripos(str,"}")
-    len = end-start+1
-    result = substr(str,start,len)
-    return result
+        #// add spaces and numbers:
+        if(addSpaces == True):
+            useChars.append(' ', ' ', ' ', ' ', ' ', ' ')
+    
+        if(addNumbers == True):
+    
+            useChars.append(random.randint(0,9))
+            useChars.append(random.randint(0,9))
+            useChars.append(random.randint(0,9))
+        random.shuffle(useChars)
+        randomString = ''.join([str(i) for i in useChars])
+        randomString = randomString.strip(' \t\n\r')
+        randomString = randomString[0:length]
+        print("RandomString", randomString)
+        return randomString
+        
+        #Return a Json-Conform String    
+        def json_string(self,str):
+        start = strpos(str,"{")
+        end = strripos(str,"}")
+        len = end-start+1
+        result = substr(str,start,len)
+        return result
 
