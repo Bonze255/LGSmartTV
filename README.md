@@ -6,7 +6,9 @@ Remote Emulation is also possible.
 
 Example:
 The Doorbell rings -> Webcam shows a picture from the Visitor
+
 or
+
 A New Mail is recieved, a Message is shown on the TV.
 
 # Requirements
