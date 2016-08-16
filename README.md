@@ -1,6 +1,6 @@
 # LGSmartTV
 WebOS Plugin for SarthomeNG.py
-
+(https://github.com/ConnectSDK/Connect-SDK-Android-Core/blob/master/src/com/connectsdk/service/WebOSTVService.java)
 Its possible to show Pictues or Messages on the Screen.
 Remote Emulation is also possible.
 
