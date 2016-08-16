@@ -19,19 +19,25 @@
 #  along with SmartHome.py.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import ctypes
+import os
+import string
+import time
+import logging
+import threading
+from lib.model.smartplugin import SmartPlugin
 import logging
 import socket
 import time
 import base64
 
-from uuid import getnode as getmac
+ALLOW_MULTIINSTANCE = False
+PLUGIN_VERSION = "1.0.0"
 
-logger = logging.getLogger('')
-
-
-class LGSmartTV():
+class LGSmartTV(SmartPlugin):
 
     def __init__(self, smarthome, host, port=55000):
+        self.logger = logging.getLogger(__name__)
         self._sh = smarthome
         self._host = host
         self._port = port
