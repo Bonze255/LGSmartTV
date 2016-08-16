@@ -18,18 +18,17 @@ This plugin has no requirements or dependencies.
 
 ## plugin.conf
 <pre>
-[smarttv]
-    class_name = SmartTV
-    class_path = plugins.smarttv
+[lgsmarttv]
+    class_name = LGSmartTV
+    class_path = plugins.lgsmarttv
     host = 192.168.0.45
-#    port = 55000
-#    tvid = 1
+    port = 3000
+
 </pre>
 
 ### Attributes
   * `host`: specifies the ip address of your SmartTV device.
   * `port`: if you want to use a nonstandard port.
-  * `tvid`: if you have more than one SmartTV device, you can identify them with the tvid in the item configuration.
 
 ## items.conf
 
@@ -48,23 +47,26 @@ There are two possibilities to use this attribute.
 
     [[mute]]
         type = bool
-        smarttv = KEY_MUTE
-        smarttv_id = 1
+        smarttv = true
+        smartfunc = mute
         enforce_updates = true
 
-    [[KIKA]]
-        name = KIKATV
-        type = bool
+    [[notification]]
+        name = notification
+        type = String
         visu_acl = rw
-        smarttv = KEY_1 | KEY_0 | KEY_6 | KEY_ENTER
-        smarttv_id = 2
+        smarttvfunc = message , "Hallo"
         enforce_updates = true
         knx_dpt = 1
         knx_listen = 0/0/7
 </pre>
-
+## Possible Functions
 ### Key Values
-And here is a list of possible key values. It depends on your device if all of them are supported.
+Play, Pause, Stop, Forward, Rewind, ChannelUp, ChannelDown, Vol+, Vol-, Mute, Set3DOn, Set3DOff, Get3DStatus
+
+### Function Values
+ShowMessage, SetVol, OpenPicture, GetVol, OpenApp, OpenUrl 
+Not Implementet GetChannelList, GetChannelinfo, SetChannel, GetChannelCurrentProgramInfo, getExternalInputList,setExternalInput,getServiceInfo,getSystemInfo
 
 ## logic.conf
 
