@@ -85,6 +85,7 @@ class LGSmartTV(SmartPlugin):
         #Item Hin welchem der Handshakekey gespeichert wird
         if 'smarttv_handshake' in item.conf:
             self.handshakeitem = item()
+            self._lg_key = item.conf['smarttv_handshake']
             self.logger.debug("LGSmartTV Handshakekey-Item {0} with value {1} for TV ID {2} found!".format(item, item.conf['smarttv_handshake'], tvid))
             return None
 
@@ -103,26 +104,35 @@ class LGSmartTV(SmartPlugin):
     def update_item(self, item, caller=None, source=None, dest=None):
         val = item()
         print("Value aus Update item ",item," = ", val) # gibt den wert des items aus
+
+        # startet handshakemodus wenn item handshake=1 ist
+        if (item.conf['smarttv'] == "HANDSHAKE") and val == True:
+            print("bin im Handshakemodus ", item, val ) # gibt den wert des items aus
+            self.connect()
+            item(self.handshakeitem,self.lg_handshake())
+            self.KEY_MSG("SmarthomeNG.py"+" YEAH, it works!!!")
+            self.logger.debug("LGSmartTV {0},{1}".format(val,item.conf['value']) )
+
+
+        #
+        #Command aus item extrahieren und unterfunktion aufrufen
+        #
         if isinstance(val, str):
             if val.startswith('KEY_'):
                 self.push(val)
             #return
-        if (item.conf['smarttv'] == "HANDSHAKE"):
-            print("bin im Handshakemodus ", item, val ) # gibt den wert des items aus
-            self.connect()
-            item(self.handshakeitem,self.lg_handshake())
-            self.KEY_msg("SmarthomeNG.py"+" YEAH, it works!!!")
-            self.logger.debug("LGSmartTV {0},{1}".format(val,item.conf['value']) )
-        #
-        #Command aus item extrahieren und unterfunktion aufrufen
-        #
-            values = item.conf['smarttv_value']
+        values = item.conf['smarttv_value']
             if isinstance(values, str):
                 values = [values]
 
             keys = item.conf['smarttv']
-            if isinstance(keys, str):
-                self.push(keys,values)
+            if keys != "":
+                 try:
+                    keys(value)
+                 except Exception:
+                    self.logger.warning("Could not connect to %s:%s, to send key: %s." % (self._host, self._port, key))
+                    return
+
 
     def push(self, key, value):
 
@@ -434,14 +444,14 @@ class LGSmartTV(SmartPlugin):
     #------------------------------------------------------------------------------------------------------------------------
     ##Funktionen des TVS
     ##FB Emulation
-    def KEY_set_volume(self, vol):
+    def KEY_SETvol(self, vol):
         #@ int volume
         command = '{"id":"set_volume","type":"request","uri":"ssap://audio/setVolume","payload":{"volume":"'+ str(vol) +'"}}'
         self.send_command(command)
-    def KEY_set_poweroff(self):
+    def KEY_SetPowerOff(self):
         command = '{"id":"power_off","type":"request","uri":"ssap://system/turnOff"}'
         self.send_command(command)
-    def KEY_set_mute(self):
+    def KEY_SETMUTE(self):
         response = self.send_command('{"id":"status_","type":"request","uri":"ssap://audio/getVolume"}')
         #// {"type":"response","id":"status_1","payload":{"muted":false,"scenario":"mastervolume_tv_speaker","active":false,"action":"requested","volume":7,"returnValue":true,"subscribed":true}}
         return None
@@ -492,7 +502,7 @@ class LGSmartTV(SmartPlugin):
     Pop-UP Message on TV
     :param Messagestring
     """
-    def KEY_msg(self, msg):
+    def KEY_MSG(self, msg):
         payload = {
            "message": msg,
         }
@@ -527,7 +537,7 @@ class LGSmartTV(SmartPlugin):
     Open Browser with given url
     :param url: string url(http:)
     """
-    def  KEY_open_browser_at(self, url):
+    def  KEY_OPENURL(self, url):
         #@url url with http/https
     #// response: {"type":"response","id":"0","payload":{"returnValue":true,"id":"com.webos.app.browser","sessionId":"Y29tLndlYm9zLmFwcC5icm93c2VyOnVuZGVmaW5lZA=="}}
         print('opening browser at:', url)
@@ -608,7 +618,7 @@ class LGSmartTV(SmartPlugin):
     :param title:   title from the Image
     :param desc:    description
     """
-    def KEY_show_image(self, url, title = "", desc =""):
+    def KEY_SHOWIMAGE(self, url, title = "", desc =""):
         mime = MimeTypes()
         mime_type = mime.guess_type(url)
 
