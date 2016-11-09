@@ -18,12 +18,12 @@ This plugin has no requirements or dependencies.
 
 ## plugin.conf
 <pre>
-[lgsmarttv]
+[LgSmartTv]
     class_name = LGSmartTV
     class_path = plugins.lgsmarttv
-    host = 192.168.0.45
-    port = 3000
-
+    host = 192.168.178.56
+	port = 3000
+	tvid = 1
 </pre>
 
 ### Attributes
@@ -31,41 +31,62 @@ This plugin has no requirements or dependencies.
   * `port`: if you want to use a nonstandard port.
 
 ## items.conf
+<pre>
+[smarttv]
+	type = str
+    smarttv = true
+    smarttv_id = 1
+    enforce_updates = true
+	[[handshake]]
+	    name = "Activate Handshake"
+		type = bool
+        smarttv = "HANDSHAKE"
+		visu_acl = rw
+    [[handshakekey]]
+		name = Handshakekey
+		type = str
+        smarttv = true
+        smarttv_handshake = 1
+        sql = True
+		cache = True
+		visu_acl = rw
+    [[message]]
+        name = Hellomessage
+        type = bool
+        visu_acl = rw
+        enforce_updates = true
+		smarttv_id = 1
+		smarttv = KEY_msg                                   #Befehl
+        smarttv_value = "Herzlich Willkommen by SmarthomeNG"#value
+        knx_dpt = 1
+        knx_listen = 0/0/7
 
-### smarttv
+</pre>
+### LGSmartTv
 There are two possibilities to use this attribute. 
   * Define it on a string item and set it to `true`: With this configuration, every string you set to this item will be send to the SmartTV device.
   * Define it on a boolean item and set it to a key value: With this configuration, the specified key value is sent whenever you set the item to `true` (if the item is only for sending a specific command to the tv then you should consider using the `enforce_updates` attribute, too).
   * for functions witch have more than one variable, they must been seperated with an ","; shown by the examples 
 
-<pre>
-[tv]
-    type = str
-    smarttv = true
-    smarttv_id = 1
-    enforce_updates = true
 
-    [[mute]]
-        type = bool
-        smarttv = true
-        smartfunc = mute
-        enforce_updates = true
-
-    [[notification]]
-        name = notification
-        type = String
-        visu_acl = rw
-        smarttvfunc = message , "Hallo"
-        enforce_updates = true
-        knx_dpt = 1
-        knx_listen = 0/0/7
-</pre>
 ## Possible Functions
-### Key Values
-Play, Pause, Stop, Forward, Rewind, ChannelUp, ChannelDown, Vol+, Vol-, Mute, Set3DOn, Set3DOff, Get3DStatus
+Funktion | Key | Value| Beschreibung
+--- | --- | ---| ---
+Nachricht anzeigen | KEY_MSG | "Nachricht" |maximal 160 Zeichen "Nachricht"
+Bild anzeigen | KEY_PIC | "URL" |Zeigt im Media Player ein Bild an, "URL oder Speicherort muss übergaben werden"
+Lautstärke erhöhen | KEY_VOL+ | -- | Volume +
+Lautstärke verringern | KEY_VOL- | -- | Volume -
+Lautstärke setzen (Absolut) | KEY_SETVOL | -- | 
+Button Play     | KEY_PlAY | -- | Button Play
+Button FOrward  | KEY_FORWARD | -- |
+Button Rewind   | KEY_REWIND | -- |
+                | KEY_OPENURL | "URL" |Öffnet im MEdia Player eine URL , diese muss übergaben werden 
+Button Mute     | KEY_Mute| --|
+Button Set3DOn  | KEY_Set3DOn | --|
+Button Set3DOff | KEY_Set3DOff| --|
+3d Status       | KEY_GET3DSTATUS| --|
 
 ### Function Values
-ShowMessage, SetVol, OpenPicture, GetVol, OpenApp, OpenUrl 
 Not Implementet GetChannelList, GetChannelinfo, SetChannel, GetChannelCurrentProgramInfo, getExternalInputList,setExternalInput,getServiceInfo,getSystemInfo
 
 ## logic.conf
