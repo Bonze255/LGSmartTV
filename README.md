@@ -74,6 +74,7 @@ Funktion | Key | Value| Beschreibung
 --- | --- | ---| ---
 Nachricht anzeigen | KEY_MSG | "Nachricht" |maximal 160 Zeichen "Nachricht"
 Bild anzeigen | KEY_PIC | "URL" |Zeigt im Media Player ein Bild an, "URL oder Speicherort muss übergaben werden"
+POP-UP anzeigen | KEY_POP | "URL"  "text" |Zeigt ein Popup, mit Icon an 
 Lautstärke erhöhen | KEY_VOL+ | -- | Volume +
 Lautstärke verringern | KEY_VOL- | -- | Volume -
 Lautstärke setzen (Absolut) | KEY_SETVOL | -- | 
