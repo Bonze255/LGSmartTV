@@ -64,7 +64,7 @@ class LGSmartTV(SmartPlugin):
         self._handshake = False
         self._lg_key = ""
         self._path = str("/")
-        self._handshakeitem = "" #// name des handshakeitems!
+        self._handshakeitem = ''#// name des handshakeitems!
         self.tvid = 1
         self._connected = False
         #self.connect()
@@ -82,72 +82,72 @@ class LGSmartTV(SmartPlugin):
         if tvid != self.tvid:
             return None
 
-        #Item Hin welchem der Handshakekey gespeichert wird
-        if 'smarttv_handshake' in item.conf:
-            self.handshakeitem = item()
-            self._lg_key = item.conf['smarttv_handshake']
-            self.logger.debug("LGSmartTV Handshakekey-Item {0} with value {1} for TV ID {2} found!".format(item, item.conf['smarttv_handshake'], tvid))
-            return None
 
-        #Value des Befehls
-        if 'smarttv_value' in item.conf:
-            tvvalue = item.conf['smarttv_value']
-            self.logger.debug("LGSmartTV Item {0} with value {1} for TV ID {2} found!".format(item, item.conf['smarttv'], tvid))
-            return None
         #Befehl
+         #Item Hin welchem der Handshakekey gespeichert wird
         if 'smarttv' in item.conf:
-            self.logger.debug("LGSmartTV Item {0} with value {1} for TV ID {2} found!".format(item, item.conf['smarttv'], tvid))
+            if item.conf['smarttv'] == 'HANDSHAKEKEY':
+                self.handshakeitem = item()
+                if item != "": #"#name des Items speichern
+                    self._lg_key = item          #event vorhanden  Key speichern
+                    self.logger.debug("LGSmartTV Handshakekey-Item {0} with value {1} filled  ".format(self.handshakeitem ,item))
+            elif item.conf['smarttv'] != '':
+                #tvvalue = item.conf['smarttv_value']
+                self.logger.debug("LGSmartTV Item {0} with value {1} for TV ID {2} found!".format(item, item.conf['smarttv'], tvid))
+
             return self.update_item
         else:
-            return None
+            pass
 
     def update_item(self, item, caller=None, source=None, dest=None):
-        val = item()
-        print("Value aus Update item ",item," = ", val) # gibt den wert des items aus
+        #[[[show_pic]]]
+                #name = Kamera1
+                #type = bool
+                #visu_acl = rw
+                #enforce_updates = true
+                #smarttv_id = 1
+                #smarttv = KEY_SHOWPIC                                  #Befehl
+                #smarttv_value = "http://80.152.152.104:8091/cgi-bin/image.jpg?automatic=day&camera=right&size=640x480&&date=5?counter=7372733"|"Titel"|"Beschreibung"#value
+                #knx_dpt = 1
+                #knx_listen = 0/0/7
+        if caller != 'LGSmartTV':
+            if 'smarttv' in item.conf:
+                val = item()
+                key = item.conf['smarttv']
+                self.logger.debug("LGSmartTV Update Item aufgerufen: {},{}".format(val, item))
+                self.logger.debug("LGSmartTV Value aus Update item {} = {}".format(item,val)) # gibt den wert des items aus
 
-        # startet handshakemodus wenn item handshake=1 ist
-        if (item.conf['smarttv'] == "HANDSHAKE") and val == True:
-            print("bin im Handshakemodus ", item, val ) # gibt den wert des items aus
-            self.connect()
-            item(self.handshakeitem,self.lg_handshake())
-            self.KEY_MSG("SmarthomeNG.py"+" YEAH, it works!!!")
-            self.logger.debug("LGSmartTV {0},{1}".format(val,item.conf['value']) )
+                if 'smarttv_value' in item.conf:
+                    values = item.conf['smarttv_value']
+                    if "|" in values:
+                        values = values.split("|")
+                        print("values", values)
+                        self.logger.debug("LGSmartTV Übergabene Values", values)
+                else:
+                    values = ""
 
-
-        #
-        #Command aus item extrahieren und unterfunktion aufrufen
-        #
-        if isinstance(val, str):
-            if val.startswith('KEY_'):
-                self.push(val)
-            #return
-        values = item.conf['smarttv_value']
-            if isinstance(values, str):
-                values = [values]
-
-            keys = item.conf['smarttv']
-            if keys != "":
-                 try:
-                    keys(value)
-                 except Exception:
-                    self.logger.warning("Could not connect to %s:%s, to send key: %s." % (self._host, self._port, key))
+                # startet handshakemodus wenn item handshake=1 ist
+                if key == "HANDSHAKE":
+                    self.logger.debug("LGSmartTV bin im Handshakemodus {}{}".format( item, val) ) # gibt den wert des items aus
+                    self.connect()
+                    self._lg_key(self.lg_handshake())
+                    self.KEY_MSG("SmarthomeNG.py"+" YEAH, it works!!!")
+                    self.logger.debug("LGSmartTV {0},{1}".format(val,item.conf['smarttv']))
                     return
-
-
-    def push(self, key, value):
-
-        if self.connected == False:
-            self.connect()
-            self.lg_handshake(self.handshakeitem)
+                else:
+                    self.logger.debug("LGSmartTV: Funktion {0} mit Parameter(n){1} ".format(key, values))
+                    if key != "":
+                         try:
+                            key(values) ##funktion aufrufen
+                            self.logger.debug("LGSmartTV Versuche folgnede Funktion zum Tv zu schicken: {0}{1}".format(key, values))
+                         except Exception:
+                            self.logger.warning("LGSmartTV Could not connect to %s:%s, to send key: %s." % (self._host, self._port, key))
+                            return
+            else:
+                 pass
         else:
-            try:
-                if isinstance(value, str):
-                    values = [value]
-                    key(value)
-            except Exception:
-                self.logger.warning("Could not connect to %s:%s, to send key: %s." % (self._host, self._port, key))
-                return
-
+            pass
+        
     def parse_logic(self, logic):
         pass
     def run(self):
@@ -247,8 +247,8 @@ class LGSmartTV(SmartPlugin):
                         lg_key_received = True
                         key = result['payload']['client-key']
                         #self._lg_key = result['payload']['client-key']
-                        #self.update_item(self.handshakeitem,result['payload']['client-key'])
-                        self.logger.debug("LGSmartTV: LG Client-Key successfully received: {}".format(self._lg_key))
+                        #self.handshakeitem(result['payload']['client-key'], "LGSmartTV")
+                        self.logger.debug("LGSmartTV: LG Client-Key successfully received: {0} - {1}".format(self._lg_key, self.handshakeitem))
                     elif ('id' in result) and result['id'] == 'register_0' and ('error' in result):
                         error_received = True
                         key = ""
@@ -521,7 +521,7 @@ class LGSmartTV(SmartPlugin):
         #@stale 	boolean 	<optional>
 	    #@->If true, it's not actively displayed as a new notification.
     """
-    def KEY_message2(self,msg):# not working!°
+    def KEY_MSG2(self,msg):# not working!°
         iconData = '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'
 
         payload = {
@@ -618,7 +618,9 @@ class LGSmartTV(SmartPlugin):
     :param title:   title from the Image
     :param desc:    description
     """
-    def KEY_SHOWIMAGE(self, url, title = "", desc =""):
+    #def KEY_SHOWPIC(self, url, title = "", desc =""):
+    def KEY_SHOWPIC(self, values):
+        values = url,title,desc
         mime = MimeTypes()
         mime_type = mime.guess_type(url)
 
