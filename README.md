@@ -66,7 +66,7 @@ This plugin has no requirements or dependencies.
 There are two possibilities to use this attribute. 
   * Define it on a string item and set it to `true`: With this configuration, every string you set to this item will be send to the SmartTV device.
   * Define it on a boolean item and set it to a key value: With this configuration, the specified key value is sent whenever you set the item to `true` (if the item is only for sending a specific command to the tv then you should consider using the `enforce_updates` attribute, too).
-  * for functions witch have more than one variable, they must been seperated with an ","; shown by the examples 
+  * for functions witch have more than one variable, they must been seperated with an "|"; shown by the examples 
 
 
 ## Possible Functions
