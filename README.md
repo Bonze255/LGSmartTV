@@ -70,22 +70,22 @@ There are two possibilities to use this attribute.
 
 
 ## Possible Functions
-Funktion | Key | Value| Beschreibung
---- | --- | ---| ---
-Nachricht anzeigen | KEY_MSG | "Nachricht" |maximal 160 Zeichen "Nachricht"
-Bild anzeigen | KEY_PIC | "URL" |Zeigt im Media Player ein Bild an, "URL oder Speicherort muss übergaben werden"
-POP-UP anzeigen | KEY_POP | "URL"  "text" |Zeigt ein Popup, mit Icon an 
-Lautstärke erhöhen | KEY_VOL+ | -- | Volume +
-Lautstärke verringern | KEY_VOL- | -- | Volume -
-Lautstärke setzen (Absolut) | KEY_SETVOL | -- | 
-Button Play     | KEY_PlAY | -- | Button Play
-Button FOrward  | KEY_FORWARD | -- |
-Button Rewind   | KEY_REWIND | -- |
-                | KEY_OPENURL | "URL" |Öffnet im MEdia Player eine URL , diese muss übergaben werden 
-Button Mute     | KEY_Mute| --|
-Button Set3DOn  | KEY_Set3DOn | --|
-Button Set3DOff | KEY_Set3DOff| --|
-3d Status       | KEY_GET3DSTATUS| --|
+Funktion | Key | Webos2| Webos3|Value| Beschreibung
+--- | --- |---|---| ---| ---
+Nachricht anzeigen | KEY_MSG ||| "Nachricht" |maximal 160 Zeichen "Nachricht"
+Bild anzeigen | KEY_PIC ||| "URL" |Zeigt im Media Player ein Bild an, "URL oder Speicherort muss übergaben werden"
+POP-UP anzeigen | KEY_POP ||| "URL"  "text" |Zeigt ein Popup, mit Icon an 
+Lautstärke erhöhen | KEY_VOL+ ||| -- | Volume +
+Lautstärke verringern | KEY_VOL- ||| -- | Volume -
+Lautstärke setzen (Absolut) | KEY_SETVOL ||| -- | 
+Button Play     | KEY_PlAY ||| -- | Button Play
+Button FOrward  | KEY_FORWARD ||| -- |
+Button Rewind   | KEY_REWIND ||| -- |
+                | KEY_OPENURL ||| "URL" |Öffnet im MEdia Player eine URL , diese muss übergaben werden 
+Button Mute     | KEY_Mute| --|||
+Button Set3DOn  | KEY_Set3DOn ||| --|
+Button Set3DOff | KEY_Set3DOff||| --|
+3d Status       | KEY_GET3DSTATUS||| --|
 
 ### Function Values
 Not Implementet GetChannelList, GetChannelinfo, SetChannel, GetChannelCurrentProgramInfo, getExternalInputList,setExternalInput,getServiceInfo,getSystemInfo
