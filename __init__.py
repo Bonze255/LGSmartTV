@@ -70,7 +70,40 @@ class LGSmartTV(SmartPlugin):
         #self.connect()
         #self._lg_key = self.lg_handshake()
         #self.KEY_msg("SmarthomeNG.py"+" YEAH, it works!!!")
+        self.functions = {
+                    #KEYS
+                            'KEY_POWEROFF':         LGSmartTV.KEY_POWEROFF,
+                            'KEY_MUTE':         LGSmartTV.KEY_MUTE,
+                            'KEY_SHOWPIC':      LGSmartTV.KEY_SHOWPIC,
+                            'KEY_SHOWMEDIA':    LGSmartTV.KEY_SHOWMEDIA,
+                            'KEY_OPENMEDIAPL':  LGSmartTV.KEY_OPENMEDIAPL,
+                            'KEY_PLAY':         LGSmartTV.KEY_PLAY,
+                            'KEY_STOP':         LGSmartTV.KEY_STOP,
+                            'KEY_PAUSE':        LGSmartTV.KEY_PAUSE,
+                            'KEY_REWIND':       LGSmartTV.KEY_REWIND,
+                            'KEY_FORWARD':      LGSmartTV.KEY_FORWARD,
+                            'KEY_CHANNELUP':    LGSmartTV.KEY_CHANNELUP,
+                            'KEY_CHANNELDOWN':  LGSmartTV.KEY_CHANNELDOWN,
+                            'KEY_3DON':         LGSmartTV.KEY_3DON,
+                            'KEY_3DOFF':        LGSmartTV.KEY_3DOFF,
+                            'KEY_VOLUP':         LGSmartTV.KEY_VOLUP,
+                            'KEY_VOLDOWN':        LGSmartTV.KEY_VOLDOWN,
+                    #Funktions
+                            'SET_MSG':          LGSmartTV.SET_MSG,
+                            'SET_MSG2':          LGSmartTV.SET_MSG2,
+                            'SET_VOL':          LGSmartTV.SET_VOL,
+                            'SET_INPUTSOURCE':  LGSmartTV.SET_INPUTSOURCE,
+                            'SET_CHANNEL':      LGSmartTV.SET_CHANNEL,
+                            'GET_SYSTEMINFO':   LGSmartTV.GET_SYSTEMINFO,
+                            'GET_SWINFO':       LGSmartTV.GET_SWINFO,
+                            'GET_SERVICES':     LGSmartTV.GET_SERVICES,
+                            'GET_CHANNELLIST':  LGSmartTV.GET_CHANNELLIST,
+                            'GET_CHANNELINFO':  LGSmartTV.GET_CHANNELINFO,
+                            'GET_INPUTLIST':    LGSmartTV.GET_INPUTLIST,
+                            'GET_AUDIOSTATUS':  LGSmartTV.GET_AUDIOSTATUS,
+                            'GET_PROGRAMMINFO':  LGSmartTV.GET_CHANNELPROGRAMMINFO
 
+                          }
 
     def parse_item(self, item):
         #TVID
@@ -100,54 +133,47 @@ class LGSmartTV(SmartPlugin):
             pass
 
     def update_item(self, item, caller=None, source=None, dest=None):
-        #[[[show_pic]]]
-                #name = Kamera1
-                #type = bool
-                #visu_acl = rw
-                #enforce_updates = true
-                #smarttv_id = 1
-                #smarttv = KEY_SHOWPIC                                  #Befehl
-                #smarttv_value = "http://80.152.152.104:8091/cgi-bin/image.jpg?automatic=day&camera=right&size=640x480&&date=5?counter=7372733"|"Titel"|"Beschreibung"#value
-                #knx_dpt = 1
-                #knx_listen = 0/0/7
         if caller != 'LGSmartTV':
             if 'smarttv' in item.conf:
                 val = item()
                 key = item.conf['smarttv']
-                self.logger.debug("LGSmartTV Update Item aufgerufen: {},{}".format(val, item))
-                self.logger.debug("LGSmartTV Value aus Update item {} = {}".format(item,val)) # gibt den wert des items aus
+                #self.logger.debug("LGSmartTV Update Item aufgerufen: {},{}".format(val, item))
+                #self.logger.debug("LGSmartTV Value aus Update item {} = {}".format(item,val)) # gibt den wert des items aus
 
                 if 'smarttv_value' in item.conf:
                     values = item.conf['smarttv_value']
                     if "|" in values:
+                        values = []
                         values = values.split("|")
-                        print("values", values)
-                        self.logger.debug("LGSmartTV Übergabene Values", values)
+                    self.logger.debug("LGSmartTV Übergabene Values {}".format(values))
                 else:
-                    values = ""
+                    values = []
+                    values = ["","","",""]
 
                 # startet handshakemodus wenn item handshake=1 ist
                 if key == "HANDSHAKE":
                     self.logger.debug("LGSmartTV bin im Handshakemodus {}{}".format( item, val) ) # gibt den wert des items aus
                     self.connect()
                     self._lg_key(self.lg_handshake())
-                    self.KEY_MSG("SmarthomeNG.py"+" YEAH, it works!!!")
+                    self.SET_MSG("SmarthomeNG.py"+" YEAH, it works!!!")
                     self.logger.debug("LGSmartTV {0},{1}".format(val,item.conf['smarttv']))
                     return
                 else:
                     self.logger.debug("LGSmartTV: Funktion {0} mit Parameter(n){1} ".format(key, values))
-                    if key != "":
-                         try:
-                            key(values) ##funktion aufrufen
+                    if key in self.functions:
+                        try:
+
+                            self.functions[key](self,values)
+                            #key(values) ##funktion aufrufen
                             self.logger.debug("LGSmartTV Versuche folgnede Funktion zum Tv zu schicken: {0}{1}".format(key, values))
-                         except Exception:
-                            self.logger.warning("LGSmartTV Could not connect to %s:%s, to send key: %s." % (self._host, self._port, key))
+                        except Exception as e:
+                            self.logger.warning("LGSmartTV Could not connect to %s:%s, to send key: %s - %s" % (self._host, self._port, key,e))
                             return
-            else:
-                 pass
+            #else:
+                 #pass
         else:
             pass
-        
+
     def parse_logic(self, logic):
         pass
     def run(self):
@@ -417,10 +443,13 @@ class LGSmartTV(SmartPlugin):
             if (response):
                 responsedict = self.json_string(response)
                 if "error" in responsedict.keys():
-                    self.logger.error("LGSmartTV: ERROR: {0}, by id {1}".format(responsedict['error'],responsedict['id']))
-                    self.logger.error("LGSmartTV: by this Command:{}".format(cmd))
-            else:
-                self.logger.error("LGSmartTV: No Data Recieved! Error sending command:{}".format(cmd))
+                    self.logger.error("LGSmartTV: ERROR: {0} - {1}, by id {2}".format(responsedict['error'],responsedict['payload']['errortext'],responsedict['id']))
+                    #self.logger.error("LGSmartTV: by this Command:{}".format(cmd))
+                else:
+                    self.logger.debug("LGSmartTV: INFO: {0}, by id {1}".format(responsedict['payload'],responsedict['id']))
+            #Muesste normalerweise schon vorher abgefangen werden 20.12. auskommentiert
+            #else:
+            #    self.logger.error("LGSmartTV: ERROR: No Data Recieved! Error sending command:{}".format(cmd))
             return response
 
     """
@@ -444,56 +473,85 @@ class LGSmartTV(SmartPlugin):
     #------------------------------------------------------------------------------------------------------------------------
     ##Funktionen des TVS
     ##FB Emulation
-    def KEY_SETvol(self, vol):
+    def SET_VOL(self, vol):
         #@ int volume
         command = '{"id":"set_volume","type":"request","uri":"ssap://audio/setVolume","payload":{"volume":"'+ str(vol) +'"}}'
         self.send_command(command)
-    def KEY_SetPowerOff(self):
+    def KEY_POWEROFF(self,values):
         command = '{"id":"power_off","type":"request","uri":"ssap://system/turnOff"}'
         self.send_command(command)
-    def KEY_SETMUTE(self):
-        response = self.send_command('{"id":"status_","type":"request","uri":"ssap://audio/getVolume"}')
+    def KEY_MUTE(self,values):
+        #response = self.send_command('{"id":"status_","type":"request","uri":"ssap://audio/getVolume"}')
         #// {"type":"response","id":"status_1","payload":{"muted":false,"scenario":"mastervolume_tv_speaker","active":false,"action":"requested","volume":7,"returnValue":true,"subscribed":true}}
+        command = '{"id":"set_volume","type":"request","uri":"ssap://audio/setVolume","payload":{"volume":"'+ str(-1) +'"}}'
         return None
-    def KEY_input_media_play(self):
+    def KEY_PLAY(self,values):
         command = '{"id":"set_play","type":"request","uri":"ssap://media.controls/play"}'
         self.send_command(command)
-    def KEY_input_media_stop(self):
+    def KEY_STOP(self,values):
         command = '{"id":"set_stop","type":"request","uri":"ssap://media.controls/stop"}'
         self.send_command(command)
-    def KEY_input_media_pause(self):
+    def KEY_PAUSE(self,values):
         command = '{"id":"set_pause","type":"request","uri":"ssap://media.controls/pause"}'
         self.send_command(command)
-    def KEY_input_media_rewind(self):
+    def KEY_REWIND(self,values):
         command = '{"id":"set_rewind","type":"request","uri":"ssap://media.controls/rewind"}'
         self.send_command(command)
-    def KEY_input_media_forward(self):
+    def KEY_FORWARD(self,values):
         command = '{"id":"set_fastForward","type":"request","uri":"ssap://media.controls/fastForward"}'
         self.send_command(command)
-    def KEY_input_channel_up(self):
+    def KEY_CHANNELUP(self,values):
         command = '{"id":"set_channelUp","type":"request","uri":"ssap://tv/channelUp"}'
         self.send_command(command)
-    def KEY_input_channel_down(self):
+    def KEY_CHANNELDOWN(self,values):
         command = '{"id":"set_channelDown","type":"request","uri":"ssap://tv/channelDown"}'
         self.send_command(command)
-    def KEY_get_channel_info(self, id, channelnr):
+    """
+    Change the TV programm to given Channelid
+    :param channel: Channelid
+    """
+    def SET_CHANNEL(self,values):
+        #RESPONSE {"type":"response","id":"1","payload":{"returnValue":true}}
+        id = values[0]
         payload = {
-            "channelId": id,
-            "channelNumber":channelnr}
-        command = '{"id":"channelinfo","type":"request","uri":"ssap://tv/openChannel","payload":'+ json.dumps(payload)+'}'
+            "channelId": id,}
+        command = '{"id":"set_channel","type":"request","uri":"ssap://tv/openChannel","payload":'+ json.dumps(payload)+'}'
         self.send_command(command)
 
-    def KEY_input_3d_on(self):
+    def KEY_3DON(self,values):
         command = '{"id":"set_3Don","type":"request","uri":"ssap://com.webos.service.tv.display/set3DOn"}'
         self.send_command(command)
-    def KEY_input_3d_off(self):
+    def KEY_VOLUP(self,values):
+        command = '{"id":"set_volup","type":"request","uri":"ssap://audio/volumeUp"}'
+        self.send_command(command)
+    def KEY_VOLDOWN(self,values):
+        #RESPONSE
+        #('{"type":"response","id":"set_voldown","payload":{"returnValue":true}}',)
+        command = '{"id":"set_voldown","type":"request","uri":"ssap://audio/volumeDown"}'
+        self.send_command(command)
+    def KEY_3DOFF(self,values):
         command = '{"id":"set_3Doff","type":"request","uri":"ssap://com.webos.service.tv.display/set3DOff"}'
         self.send_command(command)
-    def KEY_get_audio_status(self):
+
+    """
+    Reads Audio Status
+    :param NONE
+    :returns int audiostatus
+    """
+    def GET_AUDIOSTATUS(self,values):
+        #RESPONSE
+        #('{"type":"response","id":"status_","payload":{"returnValue":true,"scenario":"mastervolume_tv_speaker","volume":8,"muted":false}}',)
         command = '{"id":"get_status","type":"request","uri":"ssap://audio/getStatus"}'
         #// send_command("status_", "subscribe", "ssap://audio/getStatus", null, fn);
-        self.send_command(command)
-
+        response = self.send_command(command)
+        responsedict = self.json_string(response)
+        if 'payload' in responsedict:
+           if responsedict[payload][muted] == 'true':
+                self.logger.debug("LGSmartTV: Tv ist LAUTLOS")
+                return 0
+           else:
+               self.logger.debug("LGSmartTV: Tv-Lautstärke ist {}".format(responsedict[payload][volume]))
+               return responsedict[payload][volume]
     """
     TV Commandfunktionen
     """
@@ -502,7 +560,7 @@ class LGSmartTV(SmartPlugin):
     Pop-UP Message on TV
     :param Messagestring
     """
-    def KEY_MSG(self, msg):
+    def SET_MSG(self, msg):
         payload = {
            "message": msg,
         }
@@ -521,12 +579,16 @@ class LGSmartTV(SmartPlugin):
         #@stale 	boolean 	<optional>
 	    #@->If true, it's not actively displayed as a new notification.
     """
-    def KEY_MSG2(self,msg):# not working!°
-        iconData = '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'
+    def SET_MSG2(self,values):# not working!°
+        #iconData = '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'
+        msg = values[0]
+        iconurl = values[1]
 
+        iconData  = "\\SMARTHOMEVM\SmartHome.py\plugins\lgsmarttv\logo.png"
         payload = {
            "message": msg,
-           "iconData" : iconData,
+           #"iconData" : iconData,
+            "iconurl" : iconData,
            "iconExtension" : "png",
            "noaction": "1",
            "target": "_blank"
@@ -550,40 +612,49 @@ class LGSmartTV(SmartPlugin):
     Gets the Channellist from the TV
     return: Channellist-array
     """
-    def KEY_channellist(self):
+    def GET_CHANNELLIST(self,values):
         command = '{"id":"channels_","type":"request","uri":"ssap://tv/getChannelList"}'
+        #RESPONSE('{"type":"response","id":"channels_","payload":{"returnValue":true,"channelList":[{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d0d","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d0e","channelGroupId":1,"channelGroupName":"DTV"},
+        # {"_id":"533d0f","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":0,"Invisible":true,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7297,"TSID":1111,"TV":true,"channelId":"7_0_12_0_1111_7297_1","channelMajMinNo":"06-00012-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"Kathrein DVB SSU","channelNumber":"12","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":12,"minorNumber":0,"physicalNumber":0,"programId":"1111_7297_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":12,"shortCut":0,"signalChannelId":"1111_7297_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d11","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d12","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d13","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":1,"Invisible":true,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7295,"TSID":1111,"TV":true,"channelId":"7_0_14_0_1111_7295_1","channelMajMinNo":"06-00014-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"STB Sony Spain","channelNumber":"14","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":14,"minorNumber":0,"physicalNumber":0,"programId":"1111_7295_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":12,"shortCut":0,"signalChannelId":"1111_7295_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d24","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d25","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d26","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":3,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7248,"TSID":1111,"TV":true,"channelId":"7_0_37_0_1111_7248_1","channelMajMinNo":"06-00037-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"tvtv Digital","channelNumber":"37","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":37,"minorNumber":0,"physicalNumber":0,"programId":"1111_7248_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":12,"shortCut":0,"signalChannelId":"1111_7248_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d28","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d29","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d2a","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":4,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7287,"TSID":1111,"TV":true,"channelId":"7_0_38_0_1111_7287_1","channelMajMinNo":"06-00038-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"Samsung iDTV EU Upgrade","channelNumber":"38","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":38,"minorNumber":0,"physicalNumber":0,"programId":"1111_7287_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":12,"shortCut":0,"signalChannelId":"1111_7287_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d2c","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d2d","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d2e","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":5,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28534,"TSID":1111,"TV":true,"channelId":"7_0_39_0_1111_28534_1","channelMajMinNo":"06-00039-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR Aachen","channelNumber":"39","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":39,"minorNumber":0,"physicalNumber":0,"programId":"1111_28534_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":1,"shortCut":0,"signalChannelId":"1111_28534_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d30","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d31","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d32","channelGroupId":7,"channelGroupName":"FTA"}',)
+
       #// send_command("channels_", "subscribe", "ssap://tv/getChannelList", null, function(err, resp) {
         self.send_command(command)
-          #  var channellistarray = resp.payload.channelList;
-          #  var retlist = {channels : []};
-          #  for (var i = channellistarray.length - 1; i >= 0; i--) {
-          #    var ch = {id: channellistarray[i].channelId,
-          #              name: channellistarray[i].channelName,
-          #              number: channellistarray[i].channelNumber};
-          #    // console.log(channellistarray[i]);
-          #    console.log(ch);
-          #    retlist.channels.push(ch);
-           # }
+        responsedict = self.json_string(response)
+        if 'payload' in responsedict:
+            self.logger.debug("LGSmartTV:{}",format(responsedict))
+            #self.logger.debug("LGSmartTV: CHANNELLIST: ID, Name, Number")
+            #for channel in range(0,len(responsedict[payload][channellist])):
+            #    self.logger.debug("LGSmartTV: CHANNELINFO: {0}, {1}, {2}".format(channel[0],channel[1],channel[2]))
     """
     Gets the ID of the shown CHannel
     return: Channelid
     """
-    def KEY_get_channel(self):
+    def GET_CHANNELINFO(self,values):
+        #('{"type":"response","id":"channels_","payload":{"channelId":"1_26_3_0_8197_8261_9018","signalChannelId":"1_26_3_0_8197_8261_9018","channelModeId":0,"channelModeName":"Terrestrial","channelTypeId":1,"channelTypeName":"Terrestrial Digital TV","channelNumber":"3-0","channelName":"Channel 1","physicalNumber":26,"isSkipped":false,"isLocked":false,"isDescrambled":false,"isScrambled":false,"isFineTuned":false,"isInvisible":false,"favoriteGroup":"A","hybridtvType":null,"dualChannel":{"dualChannelId":null,"dualChannelTypeId":null,"dualChannelTypeName":null,"dualChannelNumber":null},"returnValue":true}}',)
+        #RESPONSE ('{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d34","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d35","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d36","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":7,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28536,"TSID":1111,"TV":true,"channelId":"7_0_41_0_1111_28536_1","channelMajMinNo":"06-00041-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR Bonn","channelNumber":"41","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":41,"minorNumber":0,"physicalNumber":0,"programId":"1111_28536_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":1,"shortCut":0,"signalChannelId":"1111_28536_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d38","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d39","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d3a","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":8,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28537,"TSID":1111,"TV":true,"channelId":"7_0_42_0_1111_28537_1","channelMajMinNo":"06-00042-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR Duisburg","channelNumber":"42","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":42,"minorNumber":0,"physicalNumber":0,"programId":"1111_28537_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":1,"shortCut":0,"signalChannelId":"1111_28537_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d3c","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d3d","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d3e","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d3f","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":9,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28544,"TSID":1111,"TV":true,"channelId":"7_0_43_0_1111_28544_1","channelMajMinNo":"06-00043-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Aachen","channelNumber":"43","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":43,"minorNumber":0,"physicalNumber":0,"programId":"1111_28544_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28544_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d41","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d42","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d43","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d44","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":10,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28545,"TSID":1111,"TV":true,"channelId":"7_0_44_0_1111_28545_1","channelMajMinNo":"06-00044-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Wuppertal","channelNumber":"44","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":44,"minorNumber":0,"physicalNumber":0,"programId":"1111_28545_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28545_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d46","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d47","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d48","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d49","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":11,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28546,"TSID":1111,"TV":true,"channelId":"7_0_45_0_1111_28546_1","channelMajMinNo":"06-00045-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Bonn","channelNumber":"45","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":45,"minorNumber":0,"physicalNumber":0,"programId":"1111_28546_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28546_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d4b","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d4c","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d4d","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d4e","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":12,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28547,"TSID":1111,"TV":true,"channelId":"7_0_46_0_1111_28547_1","channelMajMinNo":"06-00046-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Duisburg","channelNumber":"46","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":46,"minorNumber":0,"physicalNumber":0,"programId":"1111_28547_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28547_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d50","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d51","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d52","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":13,"Invisible":true,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7281,"TSID":1111,"TV":true,"channelId":"7_0_47_0_1111_7281_1","channelMajMinNo":"06-00047-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"Panasonic Viera","channelNumber":"47","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":47,"minorNumber":0,"physicalNumber":0,"programId":"1111_7281_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":128,"shortCut":0,"signalChannelId":"1111_7281_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d54","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d55","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d56","channelGroupId":7,"channelGroupName":"FTA"}',)
+
         command = '{"id":"channels_","type":"request","uri":"ssap://tv/getCurrentChannel"}'
-        self.send_command(command)
+        response = self.send_command(command)
+        responsedict = self.json_string(response)
+        if 'payload' in responsedict:
+             self.logger.debug("LGSmartTV: CHANNELINFO: {0}".format(responsedict['payload']))
+        elif 'error' in responsedict:
+             self.logger.error("LGSmartTV: ERROR CHANNELINFO: {0}".format(responsedict['payload']))
     """
-    Change the TV programm to given Channelid
-    :param channel: Channelid
+    Gets the Programminfo
+    return: Channelid
     """
-    def KEY_set_channel(self,channel):
-        #/* set the active channel; use channelId as from the channellist, such as eg 0_13_7_0_0_1307_0 */
-        command = '{"id":"channels_","type":"request","uri":"ssap://tv/openChannel", "payload":{"channelId":"' + channel +'"}}'
+    def GET_CHANNELPROGRAMMINFO(self,values):
+        #('{"type":"response","id":"channels_","payload":{"channelId":"1_26_3_0_8197_8261_9018","signalChannelId":"1_26_3_0_8197_8261_9018","channelModeId":0,"channelModeName":"Terrestrial","channelTypeId":1,"channelTypeName":"Terrestrial Digital TV","channelNumber":"3-0","channelName":"Channel 1","physicalNumber":26,"isSkipped":false,"isLocked":false,"isDescrambled":false,"isScrambled":false,"isFineTuned":false,"isInvisible":false,"favoriteGroup":"A","hybridtvType":null,"dualChannel":{"dualChannelId":null,"dualChannelTypeId":null,"dualChannelTypeName":null,"dualChannelNumber":null},"returnValue":true}}',)
+        #RESPONSE ('{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d34","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d35","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d36","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":7,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28536,"TSID":1111,"TV":true,"channelId":"7_0_41_0_1111_28536_1","channelMajMinNo":"06-00041-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR Bonn","channelNumber":"41","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":41,"minorNumber":0,"physicalNumber":0,"programId":"1111_28536_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":1,"shortCut":0,"signalChannelId":"1111_28536_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d38","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d39","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d3a","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":8,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28537,"TSID":1111,"TV":true,"channelId":"7_0_42_0_1111_28537_1","channelMajMinNo":"06-00042-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR Duisburg","channelNumber":"42","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":42,"minorNumber":0,"physicalNumber":0,"programId":"1111_28537_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":1,"shortCut":0,"signalChannelId":"1111_28537_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d3c","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d3d","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d3e","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d3f","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":9,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28544,"TSID":1111,"TV":true,"channelId":"7_0_43_0_1111_28544_1","channelMajMinNo":"06-00043-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Aachen","channelNumber":"43","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":43,"minorNumber":0,"physicalNumber":0,"programId":"1111_28544_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28544_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d41","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d42","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d43","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d44","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":10,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28545,"TSID":1111,"TV":true,"channelId":"7_0_44_0_1111_28545_1","channelMajMinNo":"06-00044-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Wuppertal","channelNumber":"44","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":44,"minorNumber":0,"physicalNumber":0,"programId":"1111_28545_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28545_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d46","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d47","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d48","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d49","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":11,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28546,"TSID":1111,"TV":true,"channelId":"7_0_45_0_1111_28546_1","channelMajMinNo":"06-00045-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Bonn","channelNumber":"45","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":45,"minorNumber":0,"physicalNumber":0,"programId":"1111_28546_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28546_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d4b","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d4c","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d4d","channelGroupId":7,"channelGroupName":"FTA"},{"_id":"533d4e","channelGroupId":9,"channelGroupName":"HD"}],"HDTV":true,"Handle":12,"Invisible":false,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":28547,"TSID":1111,"TV":true,"channelId":"7_0_46_0_1111_28547_1","channelMajMinNo":"06-00046-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"WDR HD Duisburg","channelNumber":"46","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":46,"minorNumber":0,"physicalNumber":0,"programId":"1111_28547_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":25,"shortCut":0,"signalChannelId":"1111_28547_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d50","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d51","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d52","channelGroupId":7,"channelGroupName":"FTA"}],"HDTV":false,"Handle":13,"Invisible":true,"Numeric":false,"ONID":1,"PrimaryCh":true,"Radio":false,"SVCID":7281,"TSID":1111,"TV":true,"channelId":"7_0_47_0_1111_7281_1","channelMajMinNo":"06-00047-000-000","channelMode":"Satellite","channelModeId":2,"channelName":"Panasonic Viera","channelNumber":"47","channelType":"Satellite Digital TV","channelTypeId":6,"configurationId":0,"descrambled":true,"favoriteGroup":"","fineTuned":false,"locked":false,"majorNumber":47,"minorNumber":0,"physicalNumber":0,"programId":"1111_7281_1","satelliteLcn":false,"satelliteName":"ASTRA 19.2E","scrambled":false,"serviceType":128,"shortCut":0,"signalChannelId":"1111_7281_1","skipped":false,"sourceIndex":7,"specialService":false},{"ATV":false,"Bandwidth":0,"CASystemIDList":{},"CASystemIDListCount":0,"DTV":true,"Data":false,"Frequency":12604,"GroupIdList":[{"_id":"533d54","channelGroupId":0,"channelGroupName":"All"},{"_id":"533d55","channelGroupId":1,"channelGroupName":"DTV"},{"_id":"533d56","channelGroupId":7,"channelGroupName":"FTA"}',)
+
+        command = '{"id":"programinfo","type":"request","uri":"ssap://tv/getChannelProgramInfo"}'
         self.send_command(command)
     """
     Set Input to the given Sourceid
     :param source: Sourceid
     """
-    def KEY_set_input_source(self, source):
+    def SET_INPUTSOURCE(self, source):
         command = '{"id":"","type":"request","uri":"ssap://tv/switchInput", "payload":{"inputId:":"' + input +'"}}'
         response = self.send_command(command)
         if "features" in response.keys():
@@ -592,23 +663,26 @@ class LGSmartTV(SmartPlugin):
     Gets the Inputlist
     :return: Inputlist-array
     """
-    def KEY_get_input_list(self):
-        #// <--- received: {"type":"response","id":"input_1","payload": {"devices":[{"id":"SCART_1","label":"AV1","port":1,"appId":"com.webos.app.externalinput.scart","icon":"http://lgsmarttv.lan:3000/resources/f84946f3119c23cda549bdcf6ad02a89c73f7682/scart.png","modified":false,"autoav":false,"currentTVStatus":"","subList":[],"subCount":0,"connected":false,"favorite":false},{...}, {...}],"returnValue":true}}
+    def GET_INPUTLIST(self,values):
+        #RESPONSE
+        #{"type":"response","id":"input_1","payload": {"devices":[{"id":"SCART_1","label":"AV1","port":1,"appId":"com.webos.app.externalinput.scart","icon":"http://lgsmarttv.lan:3000/resources/f84946f3119c23cda549bdcf6ad02a89c73f7682/scart.png","modified":false,"autoav":false,"currentTVStatus":"","subList":[],"subCount":0,"connected":false,"favorite":false},{...}, {...}],"returnValue":true}}
         command = '{"id":"input_","type":"request","uri":"ssap://tv/getExternalInputList"}'
         self.send_command(command)
 
-    def KEY_media_player_open(self, url):
+    def KEY_OPENMEDIAPL(self, values):
+        url = values[0]
         command = '{"id":"myVideo","type":"WIDEVINE","uri":"ssap://media.viewer/open", "payload":{"dataURL":"' + url +'"}}'
         self.send_command(command)
 
-    def KEY_get_SW_info(self):
+    def GET_SWINFO(self,values):
          command = '{"id":"sw_info","type":"request","uri":"ssap://com.webos.service.update/getCurrentSWInformation"}'
          self.send_command(command)
-    def KEY_get_services(self):
-
+    def GET_SERVICES(self,values):
+        #RESPONSE
+        #('{"type":"response","id":"services_","payload":{"services":[{"name":"api","version":1},{"name":"audio","version":1},{"name":"media.controls","version":1},{"name":"media.viewer","version":1},{"name":"pairing","version":1},{"name":"system","version":1},{"name":"system.launcher","version":1},{"name":"system.notifications","version":1},{"name":"tv","version":1},{"name":"webapp","version":2}],"returnValue":true}}',)
         command = '{"id":"services_","type":"request","uri":"ssap://api/getServiceList"}'
         self.send_command(command)
-    def get_systemInfo(self):
+    def GET_SYSTEMINFO(self,values):
         #luna://com.webos.service.tv.systemproperty", {
         command = '{"id":"system_info","type":"request","uri":"ssap://com.webos.service.tv.systemproperty"}'
         self.send_command(command)
@@ -620,7 +694,10 @@ class LGSmartTV(SmartPlugin):
     """
     #def KEY_SHOWPIC(self, url, title = "", desc =""):
     def KEY_SHOWPIC(self, values):
-        values = url,title,desc
+        url = values[0]
+        title = values[1]
+        desc = values[2]
+
         mime = MimeTypes()
         mime_type = mime.guess_type(url)
 
@@ -633,7 +710,14 @@ class LGSmartTV(SmartPlugin):
         command = '{"id":"images","type":"request","uri":"ssap://media.viewer/open","payload":'+ json.dumps(payload)+'}'
         self.send_command(command)
 
-    def KEY_show_media(self, url, title = "", desc ="", loop = 0):
+    def KEY_SHOWMEDIA(self, values ):
+        url = values[0]
+        title = values[1]
+        desc = values[2]
+        if values[3] != 0:
+            loop = values[3]
+        else:
+            loop = 0
         mime = MimeTypes()
         mime_type = mime.guess_type(url)
         payload = {
