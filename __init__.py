@@ -22,13 +22,8 @@
 import logging
 import socket
 import time
-import base64
-import logging
-import socket
-import time
 import datetime
 import base64
-from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 import hmac
 import json
